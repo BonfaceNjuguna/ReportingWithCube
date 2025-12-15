@@ -26,13 +26,17 @@ public class AnalyticsQueryBuilder : IAnalyticsQueryBuilder
     {
         _logger.LogDebug("Building Cube.js query for dataset: {Dataset}", dataset.Id);
 
+        var simpleFilters = TranslateFilters(uiRequest.Filters, dataset, user);
+        var groupFilters = TranslateFilterGroups(uiRequest.FilterGroups, dataset);
+        var allFilters = simpleFilters.Concat(groupFilters).ToArray();
+
         return new AnalyticsQueryRequest
         {
             Dataset = dataset.Id,
             Measures = TranslateMeasures(uiRequest.Kpis, dataset),
             Dimensions = TranslateDimensions(uiRequest.GroupBy, dataset),
             TimeDimensions = TranslateTimeDimensions(uiRequest.Filters, dataset),
-            Filters = TranslateFilters(uiRequest.Filters, dataset, user),
+            Filters = allFilters,
             Order = TranslateOrder(uiRequest.Sort, dataset),
             Limit = ApplyLimitPolicy(uiRequest.Page.Limit, dataset),
             Offset = uiRequest.Page.Offset
@@ -101,7 +105,7 @@ public class AnalyticsQueryBuilder : IAnalyticsQueryBuilder
     {
         var filters = new List<CubeFilter>();
 
-        // Translate UI filters
+        // Translate UI filters (simple AND logic)
         foreach (var uiFilter in uiFilters.Where(f => !IsTimeDimension(f, dataset)))
         {
             if (dataset.Filters.TryGetValue(uiFilter.Field, out var filterDef))
@@ -119,6 +123,43 @@ public class AnalyticsQueryBuilder : IAnalyticsQueryBuilder
         if (dataset.Security != null && user != null)
         {
             InjectSecurityFilters(filters, dataset, user);
+        }
+
+        return filters.ToArray();
+    }
+
+    private CubeFilter[] TranslateFilterGroups(FilterGroup[] filterGroups, DatasetDefinition dataset)
+    {
+        var filters = new List<CubeFilter>();
+
+        foreach (var group in filterGroups)
+        {
+            var groupFilters = new List<CubeFilter>();
+
+            foreach (var uiFilter in group.Filters.Where(f => !IsTimeDimension(f, dataset)))
+            {
+                if (dataset.Filters.TryGetValue(uiFilter.Field, out var filterDef))
+                {
+                    groupFilters.Add(new CubeFilter
+                    {
+                        Member = filterDef.CubeMember,
+                        Operator = TranslateOperator(uiFilter.Operator),
+                        Values = NormalizeValues(uiFilter.Value)
+                    });
+                }
+            }
+
+            if (groupFilters.Count > 0)
+            {
+                if (group.Logic.Equals("or", StringComparison.OrdinalIgnoreCase))
+                {
+                    filters.Add(new CubeFilter { Or = groupFilters.ToArray() });
+                }
+                else
+                {
+                    filters.Add(new CubeFilter { And = groupFilters.ToArray() });
+                }
+            }
         }
 
         return filters.ToArray();
@@ -246,6 +287,18 @@ public class AnalyticsQueryBuilder : IAnalyticsQueryBuilder
         
         if (value is IEnumerable<string> enumerable)
             return enumerable.ToArray();
+        
+        // Handle JsonElement from deserialization
+        if (value is System.Text.Json.JsonElement jsonElement)
+        {
+            if (jsonElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+            {
+                return jsonElement.EnumerateArray()
+                    .Select(e => e.GetString() ?? string.Empty)
+                    .ToArray();
+            }
+            return new[] { jsonElement.GetString() ?? string.Empty };
+        }
         
         return new[] { value.ToString() ?? string.Empty };
     }

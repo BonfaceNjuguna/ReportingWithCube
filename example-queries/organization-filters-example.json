@@ -1,0 +1,47 @@
+{
+  "datasetId": "events",
+  "kpis": [
+    "event_count",
+    "invited_suppliers_count",
+    "suppliers_submitted_count",
+    "suppliers_in_process_count"
+  ],
+  "groupBy": [
+    "event_number",
+    "event_name",
+    "purchase_organisation",
+    "company_code",
+    "purchase_group",
+    "state_name"
+  ],
+  "filters": [
+    {
+      "field": "event_type",
+      "operator": "equals",
+      "value": ["RFQ"]
+    },
+    {
+      "field": "purchase_organisation",
+      "operator": "equals",
+      "value": ["1010"]
+    },
+    {
+      "field": "company_code",
+      "operator": "in",
+      "value": ["1010"]
+    },
+    {
+      "field": "deadline",
+      "operator": "inDateRange",
+      "value": ["2025-01-01", "2025-12-31"]
+    }
+  ],
+  "sort": {
+    "by": "event_count",
+    "direction": "desc"
+  },
+  "page": {
+    "limit": 100,
+    "offset": 0
+  }
+}

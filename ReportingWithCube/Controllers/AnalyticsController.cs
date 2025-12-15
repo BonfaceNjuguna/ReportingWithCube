@@ -178,7 +178,6 @@ public class AnalyticsController : ControllerBase
 
     private AnalyticsQueryResponse BuildResponse(object cubeResult, DatasetDefinition dataset, long executionMs)
     {
-        // cubeResult is already a JsonElement from CubeService
         var cubeElement = (System.Text.Json.JsonElement)cubeResult;
         
         // Check if it's an array (the data array)

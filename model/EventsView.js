@@ -10,18 +10,20 @@ cube(`EventsView`, {
       name,
       short_description,
       current_state_id,
-      purchase_organisation,
-      company_code,
-      purchase_group,
-      commercial_contact,
-      technical_contact,
-      created_by,
+      purchase_organisation::jsonb->>'Code' as purchase_organisation,
+      company_code::jsonb->>'Code' as company_code,
+      purchase_group::jsonb->>'Code' as purchase_group,
+      (commercial_contact::jsonb->>'FirstName') || ' ' || (commercial_contact::jsonb->>'LastName') as commercial_contact,
+      NULL as technical_contact,
+      (created_by::jsonb->>'FirstName') || ' ' || (created_by::jsonb->>'LastName') as created_by,
+      created_by::jsonb->>'UserId' as created_by_user_id,
+      (updated_by::jsonb->>'FirstName') || ' ' || (updated_by::jsonb->>'LastName') as updated_by,
       created_at,
       updated_at,
       started_date,
       deadline,
       replies_opened_at,
-      replies_opened_by,
+      (replies_opened_by::jsonb->>'FirstName') || ' ' || (replies_opened_by::jsonb->>'LastName') as replies_opened_by,
       domain,
       currency,
       total_price,
@@ -44,15 +46,17 @@ cube(`EventsView`, {
       NULL as purchase_organisation,
       NULL as company_code,
       NULL as purchase_group,
-      commercial_contact,
-      technical_contact,
-      created_by,
+      (commercial_contact::jsonb->>'FirstName') || ' ' || (commercial_contact::jsonb->>'LastName') as commercial_contact,
+      (technical_contact::jsonb->>'FirstName') || ' ' || (technical_contact::jsonb->>'LastName') as technical_contact,
+      (created_by::jsonb->>'FirstName') || ' ' || (created_by::jsonb->>'LastName') as created_by,
+      created_by::jsonb->>'UserId' as created_by_user_id,
+      (updated_by::jsonb->>'FirstName') || ' ' || (updated_by::jsonb->>'LastName') as updated_by,
       created_at,
       updated_at,
       started_date,
       deadline,
       replies_opened_at,
-      replies_opened_by,
+      (replies_opened_by::jsonb->>'FirstName') || ' ' || (replies_opened_by::jsonb->>'LastName') as replies_opened_by,
       domain,
       NULL as currency,
       NULL as total_price,
@@ -121,6 +125,19 @@ cube(`EventsView`, {
       sql: `${CUBE}.id = ${RequestForToSupplierRfi}.parent_id AND ${CUBE}.event_type = 'RFI'`,
       relationship: `hasMany`
     },
+    
+    // Join to supplier state tables
+    StateRequestForToSupplierMaterialRfq: {
+      sql: `${RequestForToSupplierMaterialRfq}.current_state_id = ${StateRequestForToSupplierMaterialRfq}.id`,
+      relationship: `belongsTo`
+    },
+    
+    // Join to User table for creator department
+    User: {
+      sql: `${CUBE}.created_by_user_id::uuid = ${User}.id`,
+      relationship: `belongsTo`
+    },
+    
     Quotation: {
       sql: `${CUBE}.id = ${Quotation}.request_for_id`,
       relationship: `hasMany`
@@ -143,42 +160,35 @@ cube(`EventsView`, {
     },
     
     invitedSuppliersCount: {
-      sql: `
-        CASE 
-          WHEN ${CUBE}.event_type = 'RFQ' THEN ${RequestForToSupplierMaterialRfq.id}
-          WHEN ${CUBE}.event_type = 'RFI' THEN ${RequestForToSupplierRfi.id}
-        END`,
+      sql: `${RequestForToSupplierMaterialRfq.id}`,
       type: `countDistinct`,
       title: `Number of Invited Suppliers`
     },
     
     viewedSuppliersCount: {
-      sql: `
-        CASE 
-          WHEN ${CUBE}.event_type = 'RFQ' AND ${RequestForToSupplierMaterialRfq.hasActiveStatusChanged} = true THEN ${RequestForToSupplierMaterialRfq.id}
-          WHEN ${CUBE}.event_type = 'RFI' AND ${RequestForToSupplierRfi.hasActiveStatusChanged} = true THEN ${RequestForToSupplierRfi.id}
-        END`,
+      sql: `${RequestForToSupplierMaterialRfq.id}`,
       type: `countDistinct`,
+      filters: [
+        { sql: `${RequestForToSupplierMaterialRfq.hasActiveStatusChanged} = true` }
+      ],
       title: `Number of Suppliers (Viewed)`
     },
     
     offeredSuppliersCount: {
-      sql: `
-        CASE 
-          WHEN ${CUBE}.event_type = 'RFQ' AND ${Quotation.submittedAt} IS NOT NULL THEN ${RequestForToSupplierMaterialRfq.id}
-          WHEN ${CUBE}.event_type = 'RFI' AND ${Quotation.submittedAt} IS NOT NULL THEN ${RequestForToSupplierRfi.id}
-        END`,
+      sql: `${RequestForToSupplierMaterialRfq.id}`,
       type: `countDistinct`,
+      filters: [
+        { sql: `EXISTS(SELECT 1 FROM quotation q WHERE q.request_for_to_supplier_id = ${RequestForToSupplierMaterialRfq.id} AND q.submitted_at IS NOT NULL)` }
+      ],
       title: `Number of Suppliers (Offered/Submitted)`
     },
     
     rejectedSuppliersCount: {
-      sql: `
-        CASE 
-          WHEN ${CUBE}.event_type = 'RFQ' AND ${RequestForToSupplierMaterialRfq.isActive} = false THEN ${RequestForToSupplierMaterialRfq.id}
-          WHEN ${CUBE}.event_type = 'RFI' AND ${RequestForToSupplierRfi.isActive} = false THEN ${RequestForToSupplierRfi.id}
-        END`,
+      sql: `${RequestForToSupplierMaterialRfq.id}`,
       type: `countDistinct`,
+      filters: [
+        { sql: `${RequestForToSupplierMaterialRfq.isActive} = false` }
+      ],
       title: `Number of Suppliers (Rejected)`
     },
     
@@ -198,7 +208,12 @@ cube(`EventsView`, {
     },
     
     avgOfferPeriodDays: {
-      sql: `offerPeriodDays`,
+      sql: `
+        CASE 
+          WHEN ${CUBE}.started_date IS NOT NULL AND ${CUBE}.deadline IS NOT NULL 
+          THEN EXTRACT(EPOCH FROM (${CUBE}.deadline - ${CUBE}.started_date)) / 86400
+          ELSE NULL
+        END`,
       type: `avg`,
       format: `number`,
       title: `Average Offer Period (Days)`
@@ -218,7 +233,12 @@ cube(`EventsView`, {
     },
     
     avgCycleTimeDays: {
-      sql: `cycleTimeDays`,
+      sql: `
+        CASE 
+          WHEN ${CUBE}.created_at IS NOT NULL AND ${CUBE}.replies_opened_at IS NOT NULL 
+          THEN EXTRACT(EPOCH FROM (${CUBE}.replies_opened_at - ${CUBE}.created_at)) / 86400
+          ELSE NULL
+        END`,
       type: `avg`,
       format: `number`,
       title: `Average Cycle Time (Days)`
@@ -255,7 +275,27 @@ cube(`EventsView`, {
     },
     
     avgQuotationRate: {
-      sql: `quotationRate`,
+      sql: `
+        CASE 
+          WHEN ${CUBE}.event_type = 'RFQ' THEN
+            CASE WHEN COUNT(DISTINCT ${RequestForToSupplierMaterialRfq.id}) > 0 
+            THEN (
+              COUNT(DISTINCT CASE WHEN ${Quotation.submittedAt} IS NOT NULL 
+                                  AND ${Quotation.originalQuotationId} IS NULL 
+                             THEN ${RequestForToSupplierMaterialRfq.id} END)::FLOAT / 
+              COUNT(DISTINCT ${RequestForToSupplierMaterialRfq.id})
+            ) * 100 
+            ELSE 0 END
+          WHEN ${CUBE}.event_type = 'RFI' THEN
+            CASE WHEN COUNT(DISTINCT ${RequestForToSupplierRfi.id}) > 0 
+            THEN (
+              COUNT(DISTINCT CASE WHEN ${Quotation.submittedAt} IS NOT NULL 
+                                  AND ${Quotation.originalQuotationId} IS NULL 
+                             THEN ${RequestForToSupplierRfi.id} END)::FLOAT / 
+              COUNT(DISTINCT ${RequestForToSupplierRfi.id})
+            ) * 100 
+            ELSE 0 END
+        END`,
       type: `avg`,
       format: `percent`,
       title: `Average Quotation Rate (%)`
@@ -311,6 +351,73 @@ cube(`EventsView`, {
       format: `percent`,
       title: `Reject Rate (%)`,
       description: `Number of rejected suppliers / Number of invited suppliers * 100`
+    },
+    
+    // ===== QUOTATION MEASURES =====
+    
+    // Best (lowest) quotation total price
+    bestQuotationTotal: {
+      sql: `id`,
+      type: `number`,
+      format: `currency`,
+      title: `Best Quotation Total`,
+      description: `Lowest quotation total price`,
+      rollingWindow: {
+        trailing: `unbounded`,
+        offset: `start`
+      },
+      drillMembers: []
+    },
+    
+    // Count of opened quotations  
+    openedQuotationsCount: {
+      sql: `id`,
+      type: `number`,
+      title: `Opened Quotations Count`,
+      rollingWindow: {
+        trailing: `unbounded`,
+        offset: `start`
+      }
+    },
+    
+    // Last (highest) round number
+    lastRoundNumber: {
+      sql: `id`,
+      type: `number`,
+      title: `Last Round Number`,
+      rollingWindow: {
+        trailing: `unbounded`,
+        offset: `start`
+      }
+    },
+    
+    // ===== SUPPLIER STATE COUNTS =====
+    
+    suppliersInProcessCount: {
+      sql: `${RequestForToSupplierMaterialRfq.id}`,
+      type: `countDistinct`,
+      filters: [
+        { sql: `${StateRequestForToSupplierMaterialRfq.name} = 'InProcess'` }
+      ],
+      title: `Suppliers In Process`
+    },
+    
+    suppliersRejectedCount: {
+      sql: `${RequestForToSupplierMaterialRfq.id}`,
+      type: `countDistinct`,
+      filters: [
+        { sql: `${StateRequestForToSupplierMaterialRfq.name} = 'Rejected'` }
+      ],
+      title: `Suppliers Rejected`
+    },
+    
+    suppliersSubmittedCount: {
+      sql: `${RequestForToSupplierMaterialRfq.id}`,
+      type: `countDistinct`,
+      filters: [
+        { sql: `${StateRequestForToSupplierMaterialRfq.name} = 'SupplierReplySubmitted'` }
+      ],
+      title: `Suppliers Submitted (Reply)`
     }
   },
   
@@ -420,6 +527,18 @@ cube(`EventsView`, {
       sql: `created_by`,
       type: `string`,
       title: `Created By`
+    },
+    
+    updatedBy: {
+      sql: `updated_by`,
+      type: `string`,
+      title: `Updated By`
+    },
+    
+    creatorDepartment: {
+      sql: `${User.department}`,
+      type: `string`,
+      title: `Department (Creator)`
     },
     
     // Aliases for backend compatibility

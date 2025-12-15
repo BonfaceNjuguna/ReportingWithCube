@@ -11,6 +11,7 @@ public record UiQueryRequest
     public string[] Kpis { get; init; } = Array.Empty<string>();
     public string[] GroupBy { get; init; } = Array.Empty<string>();
     public UiFilter[] Filters { get; init; } = Array.Empty<UiFilter>();
+    public FilterGroup[] FilterGroups { get; init; } = Array.Empty<FilterGroup>();
     public UiSort? Sort { get; init; }
     public UiPagination Page { get; init; } = new();
 }
@@ -20,6 +21,15 @@ public record UiFilter
     public string Field { get; init; } = string.Empty;
     public string Operator { get; init; } = string.Empty;
     public object Value { get; init; } = string.Empty;
+}
+
+/// <summary>
+/// Logical group of filters (AND/OR)
+/// </summary>
+ public record FilterGroup
+{
+    public string Logic { get; init; } = "and"; // "and" or "or"
+    public UiFilter[] Filters { get; init; } = Array.Empty<UiFilter>();
 }
 
 public record UiSort
@@ -59,9 +69,11 @@ public record TimeDimension
 
 public record CubeFilter
 {
-    public string Member { get; init; } = string.Empty;
-    public string Operator { get; init; } = string.Empty;
-    public string[] Values { get; init; } = Array.Empty<string>();
+    public string? Member { get; init; }
+    public string? Operator { get; init; }
+    public string[]? Values { get; init; }
+    public CubeFilter[]? Or { get; init; }
+    public CubeFilter[]? And { get; init; }
 }
 
 /// <summary>

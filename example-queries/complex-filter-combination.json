@@ -1,0 +1,76 @@
+{
+  "datasetId": "events",
+  "kpis": [
+    "event_count",
+    "invited_suppliers_count",
+    "suppliers_submitted_count",
+    "suppliers_rejected_count",
+    "suppliers_in_process_count"
+  ],
+  "groupBy": [
+    "event_number",
+    "event_name",
+    "created_by",
+    "creator_department",
+    "purchase_organisation",
+    "state_name",
+    "submission_deadline"
+  ],
+  "filterGroups": [
+    {
+      "logic": "or",
+      "filters": [
+        {
+          "field": "created_by",
+          "operator": "contains",
+          "value": ["Mustermann"]
+        },
+        {
+          "field": "created_by",
+          "operator": "contains",
+          "value": ["Adil"]
+        },
+        {
+          "field": "creator_department",
+          "operator": "equals",
+          "value": ["Dev"]
+        }
+      ]
+    },
+    {
+      "logic": "or",
+      "filters": [
+        {
+          "field": "state_name",
+          "operator": "equals",
+          "value": ["Closed"]
+        },
+        {
+          "field": "state_name",
+          "operator": "equals",
+          "value": ["Completed"]
+        }
+      ]
+    }
+  ],
+  "filters": [
+    {
+      "field": "event_type",
+      "operator": "equals",
+      "value": ["RFQ"]
+    },
+    {
+      "field": "deadline",
+      "operator": "inDateRange",
+      "value": ["2024-01-01", "2025-12-31"]
+    }
+  ],
+  "sort": {
+    "by": "submission_deadline",
+    "direction": "desc"
+  },
+  "page": {
+    "limit": 100,
+    "offset": 0
+  }
+}

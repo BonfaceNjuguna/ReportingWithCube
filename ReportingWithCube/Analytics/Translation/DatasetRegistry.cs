@@ -21,11 +21,8 @@ public partial class DatasetRegistry : IDatasetRegistry
         _datasets = new Dictionary<string, DatasetDefinition>
         {
             // Comprehensive datasets matching requirements
-            // All datasets now use EventsView cube which supports multiple event types (RFQ, RFI, RFP, eAuction)
+            // All datasets use EventsView cube which supports multiple event types (RFQ, RFI)
             ["events"] = CreateComprehensiveEventsDataset(),
-            // Note: supplier_reports and item_reports are placeholders - cubes for these don't exist yet
-            // ["supplier_reports"] = CreateSupplierReportsDataset(),
-            // ["item_reports"] = CreateItemReportsDataset()
         };
     }
 

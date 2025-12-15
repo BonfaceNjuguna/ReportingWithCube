@@ -28,6 +28,7 @@ public class AnalyticsQueryValidator : IAnalyticsQueryValidator
         ValidateKpis(request.Kpis, dataset);
         ValidateDimensions(request.GroupBy, dataset);
         ValidateFilters(request.Filters, dataset);
+        ValidateFilterGroups(request.FilterGroups, dataset);
         ValidateLimits(request.Page, dataset);
         ValidateSort(request.Sort, dataset);
     }
@@ -108,6 +109,19 @@ public class AnalyticsQueryValidator : IAnalyticsQueryValidator
                         $"Date range exceeds maximum allowed ({maxDateRangeDays} days). Requested: {days} days");
                 }
             }
+        }
+    }
+
+    private void ValidateFilterGroups(FilterGroup[] filterGroups, DatasetDefinition dataset)
+    {
+        foreach (var group in filterGroups)
+        {
+            if (!new[] { "and", "or" }.Contains(group.Logic.ToLower()))
+            {
+                throw new ValidationException($"Invalid filter logic '{group.Logic}'. Must be 'and' or 'or'");
+            }
+
+            ValidateFilters(group.Filters, dataset);
         }
     }
 

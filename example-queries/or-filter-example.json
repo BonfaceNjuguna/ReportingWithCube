@@ -1,0 +1,54 @@
+{
+  "datasetId": "events",
+  "kpis": [
+    "event_count",
+    "invited_suppliers_count",
+    "suppliers_submitted_count",
+    "suppliers_rejected_count",
+    "suppliers_in_process_count"
+  ],
+  "groupBy": [
+    "event_number",
+    "event_name",
+    "created_by",
+    "state_name",
+    "submission_deadline"
+  ],
+  "filterGroups": [
+    {
+      "logic": "or",
+      "filters": [
+        {
+          "field": "created_by",
+          "operator": "contains",
+          "value": ["Koch"]
+        },
+        {
+          "field": "created_by",
+          "operator": "contains",
+          "value": ["Adil"]
+        }
+      ]
+    }
+  ],
+  "filters": [
+    {
+      "field": "event_type",
+      "operator": "equals",
+      "value": ["RFQ"]
+    },
+    {
+      "field": "deadline",
+      "operator": "inDateRange",
+      "value": ["2025-01-01", "2025-04-01"]
+    }
+  ],
+  "sort": {
+    "by": "submission_deadline",
+    "direction": "desc"
+  },
+  "page": {
+    "limit": 50,
+    "offset": 0
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "datasetId": "events",
+  "kpis": [
+    "event_count",
+    "invited_suppliers_count",
+    "suppliers_submitted_count"
+  ],
+  "groupBy": [
+    "event_number",
+    "event_name",
+    "state_name"
+  ],
+  "filters": [
+    {
+      "field": "event_type",
+      "operator": "equals",
+      "value": ["RFQ"]
+    }
+  ],
+  "sort": {
+    "by": "event_count",
+    "direction": "desc"
+  },
+  "page": {
+    "limit": 10,
+    "offset": 0
+  }
+}
