@@ -1,61 +1,85 @@
-
-import { useState } from 'react';
 import { useEffect } from 'react';
-import reactLogo from './assets/react.svg';
-import viteLogo from '/vite.svg';
 import './App.css';
+import { QueryEditor } from './components/QueryEditor';
+import { QueryResult } from './components/QueryResult';
+import { useAnalyticsQuery } from './hooks/useAnalyticsQuery';
+import type { AnalyticsQuery } from './types/analytics';
 
+const defaultQuery: AnalyticsQuery = {
+  datasetId: 'events',
+  kpis: [
+    'invited_suppliers_count',
+    'viewed_suppliers_count',
+    'offered_suppliers_count',
+    'rejected_suppliers_count',
+    'quotation_total_avg',
+    'best_quotation_total',
+    'offer_period_days',
+    'cycle_time_days',
+    'quotation_rate',
+    'reject_rate',
+  ],
+  groupBy: [
+    'event_id',
+    'event_number',
+    'event_name',
+    'created_by',
+    'created_at',
+    'started_at',
+    'deadline',
+    'awarded_at',
+    'state_name',
+    'technical_contact',
+    'commercial_contact',
+    'purchase_organisation',
+    'company_code',
+    'purchase_group',
+    'event_type',
+  ],
+  filters: [
+    {
+      field: 'event_type',
+      operator: 'equals',
+      value: 'RFQ',
+    },
+    {
+      field: 'state_name',
+      operator: 'equals',
+      value: 'Closed',
+    },
+  ],
+  sort: {
+    by: 'created_at',
+    direction: 'desc',
+  },
+  page: {
+    limit: 100,
+    offset: 0,
+  },
+};
 
 function App() {
-  const [count, setCount] = useState(0);
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { data, loading, error, runQuery } = useAnalyticsQuery();
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    fetch('http://localhost:5000/api/analytics/v1/query')
-      .then((res) => {
-        if (!res.ok) throw new Error('Network response was not ok');
-        return res.json();
-      })
-      .then((json) => setData(json))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []);
+    runQuery(defaultQuery);
+  }, [runQuery]);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank" rel="noopener noreferrer">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank" rel="noopener noreferrer">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
+    <main className="app">
+      <header className="hero">
+        <p className="eyebrow">Reporting With Cube</p>
+        <h1>Analytics workspace</h1>
+        <p className="hero__subtitle">
+          Send structured analytics queries to your backend API and inspect the response in real time. Update the
+          example payload to filter, sort, and paginate events without touching the component logic.
         </p>
-      </div>
-      <div style={{ marginTop: 32 }}>
-        <h2>Backend Data Example</h2>
-        {loading && <p>Loading...</p>}
-        {error && <p style={{ color: 'red' }}>Error: {error}</p>}
-        {data && (
-          <pre style={{ textAlign: 'left', background: '#f4f4f4', padding: 16, borderRadius: 8 }}>
-            {JSON.stringify(data, null, 2)}
-          </pre>
-        )}
-      </div>
-    </>
+      </header>
+
+      <QueryEditor initialQuery={defaultQuery} loading={loading} onSubmit={runQuery} error={error} />
+      <QueryResult data={data} loading={loading} error={error} />
+    </main>
   );
 }
 
-export default App
+export default App;
