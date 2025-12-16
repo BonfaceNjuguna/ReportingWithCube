@@ -4,20 +4,23 @@ interface QueryResultProps {
   data: AnalyticsResponse | null;
   loading: boolean;
   error: string | null;
+  compact?: boolean;
 }
 
-export function QueryResult({ data, loading, error }: QueryResultProps) {
+export function QueryResult({ data, loading, error, compact = false }: QueryResultProps) {
   const hasData = data !== null && data !== undefined;
 
   return (
-    <div className="panel">
-      <div className="panel__header">
-        <div>
-          <p className="eyebrow">Results</p>
-          <h2 className="panel__title">Response preview</h2>
-          <p className="panel__subtitle">See the raw response from the analytics API.</p>
+    <div className={`panel ${compact ? 'panel--compact' : ''}`}>
+      {!compact && (
+        <div className="panel__header">
+          <div>
+            <p className="eyebrow">Results</p>
+            <h2 className="panel__title">Response preview</h2>
+            <p className="panel__subtitle">See the raw response from the analytics API.</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {loading && <p className="muted">Fetching data…</p>}
       {!loading && error && (
