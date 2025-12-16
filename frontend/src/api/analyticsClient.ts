@@ -1,13 +1,14 @@
 import type { AnalyticsQuery, AnalyticsResponse, DatasetSchema, DatasetSummary } from '../types/analytics';
 
-const API_BASE_URL = import.meta.env.VITE_ANALYTICS_API ?? window.location.origin;
 const API_ROOT = '/api/analytics/v1';
 const ANALYTICS_PATH = `${API_ROOT}/query`;
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 export async function postAnalyticsQuery<Payload = unknown, Result = AnalyticsResponse<Payload>>(
   query: AnalyticsQuery,
 ): Promise<Result> {
-  const response = await fetch(`${API_BASE_URL}${ANALYTICS_PATH}`, {
+  const response = await fetch(buildUrl(ANALYTICS_PATH), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -24,7 +25,7 @@ export async function postAnalyticsQuery<Payload = unknown, Result = AnalyticsRe
 }
 
 export async function fetchDatasets(): Promise<DatasetSummary[]> {
-  const response = await fetch(`${API_BASE_URL}${API_ROOT}/datasets`);
+  const response = await fetch(buildUrl(`${API_ROOT}/datasets`));
 
   if (!response.ok) {
     const message = await extractErrorMessage(response);
@@ -35,7 +36,7 @@ export async function fetchDatasets(): Promise<DatasetSummary[]> {
 }
 
 export async function fetchDatasetSchema(datasetId: string): Promise<DatasetSchema> {
-  const response = await fetch(`${API_BASE_URL}${API_ROOT}/schema/${datasetId}`);
+  const response = await fetch(buildUrl(`${API_ROOT}/schema/${datasetId}`));
 
   if (!response.ok) {
     const message = await extractErrorMessage(response);
@@ -63,4 +64,30 @@ async function extractErrorMessage(response: Response): Promise<string> {
   }
 
   return fallback;
+}
+
+function resolveApiBaseUrl(): string {
+  if (import.meta.env.VITE_ANALYTICS_API) {
+    return stripTrailingSlash(import.meta.env.VITE_ANALYTICS_API);
+  }
+
+  // In Vite dev we proxy /api to the backend; keep the base relative.
+  if (typeof window !== 'undefined') {
+    const { origin } = window.location;
+    if (origin.includes('localhost:5173') || origin.includes('127.0.0.1:5173')) {
+      return 'http://localhost:5000';
+    }
+    return origin;
+  }
+
+  return '';
+}
+
+function stripTrailingSlash(value: string): string {
+  return value.endsWith('/') ? value.slice(0, -1) : value;
+}
+
+function buildUrl(path: string): string {
+  if (!API_BASE_URL) return path;
+  return `${API_BASE_URL}${path}`;
 }
