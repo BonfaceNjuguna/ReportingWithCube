@@ -16,14 +16,15 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
     setQueryText(JSON.stringify(initialQuery, null, 2));
   }, [initialQuery]);
 
-  const summary = useMemo(() => {
+  const previewQuery = useMemo(() => {
     try {
-      const parsed = JSON.parse(queryText) as Partial<AnalyticsQuery>;
-      return getSummary(parsed);
-    } catch (err) {
-      return getSummary(initialQuery);
+      return JSON.parse(queryText) as AnalyticsQuery;
+    } catch {
+      return initialQuery;
     }
   }, [initialQuery, queryText]);
+
+  const summary = useMemo(() => getSummary(previewQuery), [previewQuery]);
 
   const handleSubmit = () => {
     setParseError(null);
@@ -44,20 +45,58 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
 
   return (
     <div className="panel">
-      <div className="panel__header">
+      <div className="editor__meta">
         <div>
           <p className="eyebrow">Analytics API</p>
-          <h2 className="panel__title">Configure your query</h2>
-          <p className="panel__subtitle">
-            Adjust the request payload below to filter, sort, or paginate analytics events. The request is sent to
-            <code className="code-inline">/api/analytics/v1/query</code> on your backend.
-          </p>
+          <h2 className="editor__title">Query builder</h2>
+          <p className="panel__subtitle">Tune dataset, filters, and metrics for your analytics request.</p>
         </div>
-        <div className="summary">
-          <p className="summary__label">Summary</p>
-          <p className="summary__value">Dataset: {summary.dataset}</p>
-          <p className="summary__value">KPIs: {summary.kpiCount}</p>
-          <p className="summary__value">Grouped by: {summary.groupByCount}</p>
+        <span className="pill">{loading ? 'Running query…' : 'Ready'}</span>
+      </div>
+
+      <div className="query-summary">
+        <div className="summary-tile">
+          <p className="eyebrow">Dataset</p>
+          <p className="panel__title">{summary.dataset}</p>
+        </div>
+        <div className="summary-tile">
+          <p className="eyebrow">KPIs</p>
+          <p className="panel__title">{summary.kpiCount}</p>
+        </div>
+        <div className="summary-tile">
+          <p className="eyebrow">Group by</p>
+          <p className="panel__title">{summary.groupByCount}</p>
+        </div>
+        <div className="summary-tile">
+          <p className="eyebrow">Filters</p>
+          <p className="panel__title">{previewQuery.filters?.length ?? 0}</p>
+        </div>
+      </div>
+
+      <div className="panel__inline">
+        <h4>Groupings</h4>
+        <div className="chip-group">
+          {previewQuery.groupBy?.map((field) => (
+            <span className="chip" key={field}>
+              {field}
+            </span>
+          )) || <span className="muted">No grouping</span>}
+        </div>
+        <h4>KPIs</h4>
+        <div className="chip-group">
+          {previewQuery.kpis?.map((field) => (
+            <span className="chip" key={field}>
+              {field}
+            </span>
+          ))}
+        </div>
+        <h4>Filters</h4>
+        <div className="chip-group">
+          {(previewQuery.filters ?? []).map((filter, index) => (
+            <span className="chip" key={`${filter.field}-${index}`}>
+              {filter.field} {filter.operator} {String(filter.value)}
+            </span>
+          ))}
         </div>
       </div>
 
@@ -68,7 +107,7 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
           spellCheck={false}
           value={queryText}
           onChange={(event) => setQueryText(event.target.value)}
-          rows={22}
+          rows={18}
         />
       </label>
 
