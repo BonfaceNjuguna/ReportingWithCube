@@ -281,13 +281,13 @@ public partial class DatasetRegistry
                 },
                 ["started_at"] = new()
                 {
-                    CubeMember = "EventsView.startedAt",
+                    CubeMember = "EventsView.startedDate",
                     Label = "Started/Published At",
                     Type = "time"
                 },
                 ["deadline"] = new()
                 {
-                    CubeMember = "EventsView.submissionDeadline",
+                    CubeMember = "EventsView.deadline",
                     Label = "Deadline",
                     Type = "time"
                 },
@@ -390,7 +390,7 @@ public partial class DatasetRegistry
                 ["started_at"] = new()
                 {
                     Type = FilterType.Time,
-                    CubeMember = "EventsView.startedAt",
+                    CubeMember = "EventsView.startedDate",
                     AllowedOperators = ["inDateRange", "afterDate", "beforeDate"]
                 },
                 ["deadline"] = new()

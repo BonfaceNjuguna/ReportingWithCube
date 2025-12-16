@@ -171,3 +171,9 @@ _ReSharper*/
 dist/
 out/
 build/
+ARCHITECTURE_DOCUMENTATION.md
+RATE-CALCULATION-GUIDE.md
+.gitignore
+example-queries/event-kpi-summary.json
+example-queries/event-list-detailed.json
+example-queries/test-rates.json

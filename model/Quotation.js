@@ -226,22 +226,30 @@ cube(`Quotation`, {
     
     // Dates
     submittedAt: {
-      sql: `submitted_at`,
+      sql: `
+        CASE
+          WHEN ${CUBE}.submitted_at IS NULL THEN NULL
+          WHEN btrim(${CUBE}.submitted_at::text) = '' THEN NULL
+          WHEN lower(btrim(${CUBE}.submitted_at::text)) IN ('invalid date', 'invalid') THEN NULL
+          WHEN btrim(${CUBE}.submitted_at::text) ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN ${CUBE}.submitted_at::timestamp
+          ELSE NULL
+        END
+      `,
       type: `time`,
       title: `Submitted At`
     },
-    
+
     validUntilDate: {
       sql: `valid_until_date`,
       type: `time`,
       title: `Valid Until`
     },
-    
+
     createdAt: {
       sql: `created_at`,
       type: `time`
     },
-    
+
     updatedAt: {
       sql: `updated_at`,
       type: `time`
