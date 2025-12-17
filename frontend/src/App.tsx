@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import './App.css';
 import { QueryEditor } from './components/QueryEditor';
 import { QueryResult } from './components/QueryResult';
+import { AnalyticsChart } from './components/AnalyticsChart';
 import { useAnalyticsQuery } from './hooks/useAnalyticsQuery';
 import type { AnalyticsQuery, AnalyticsResponse, ColumnMetadata } from './types/analytics';
 
@@ -26,12 +27,12 @@ function App() {
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(100);
   const { data, loading, error, runQuery } = useAnalyticsQuery();
+  const [drillDownPath, setDrillDownPath] = useState<Array<{ field: string; value: string }>>([]);
 
   const tableData = useMemo(() => {
-    const result = deriveTableData(data, currentQuery);
+    const result = deriveTableData(data);
     return result;
   }, [data, currentQuery]);
-  const chartSeries = useMemo(() => deriveChartSeries(tableData), [tableData]);
 
   const handleQueryChange = (query: AnalyticsQuery) => {
     setCurrentQuery(query);
@@ -69,6 +70,49 @@ function App() {
       }
     };
     runQuery(queryWithPagination);
+  };
+
+  const handleDrillDown = (field: string, value: string) => {
+    // Add filter for drill-down
+    const newFilter = {
+      field,
+      operator: 'equals' as const,
+      value
+    };
+    
+    const updatedQuery = {
+      ...currentQuery,
+      filters: [...(currentQuery.filters || []), newFilter],
+      page: {
+        limit: pageSize,
+        offset: 0
+      }
+    };
+    
+    setDrillDownPath([...drillDownPath, { field, value }]);
+    setCurrentQuery(updatedQuery);
+    setCurrentPage(0);
+    runQuery(updatedQuery);
+  };
+
+  const handleDrillUp = () => {
+    if (drillDownPath.length === 0) return;
+    
+    // Remove the last drill-down filter
+    const newPath = drillDownPath.slice(0, -1);
+    const updatedQuery = {
+      ...currentQuery,
+      filters: currentQuery.filters?.slice(0, -1) || [],
+      page: {
+        limit: pageSize,
+        offset: 0
+      }
+    };
+    
+    setDrillDownPath(newPath);
+    setCurrentQuery(updatedQuery);
+    setCurrentPage(0);
+    runQuery(updatedQuery);
   };
 
   // Don't run query on mount - let user build their query first
@@ -154,7 +198,14 @@ function App() {
             )}
 
             {activeTab === 'chart' && (
-              <ResultChart series={chartSeries} loading={loading} error={error} />
+              <AnalyticsChart
+                tableData={tableData}
+                query={currentQuery}
+                loading={loading}
+                onDrillDown={handleDrillDown}
+                onDrillUp={handleDrillUp}
+                drillDownPath={drillDownPath}
+              />
             )}
 
             {activeTab === 'details' && <QueryResult data={data} loading={loading} error={error} compact />}
@@ -187,7 +238,7 @@ const emptyTable: TableData = {
   rows: [],
 };
 
-function deriveTableData(response: AnalyticsResponse | null, query?: AnalyticsQuery): TableData {
+function deriveTableData(response: AnalyticsResponse | null): TableData {
   const payload = response?.data;
 
   if (Array.isArray(payload)) {
@@ -210,20 +261,6 @@ function deriveHeaders(rows: Array<Record<string, unknown>>, columns?: ColumnMet
   if (!sampleRow) return [];
 
   return Object.keys(sampleRow).map((key) => ({ key, label: startCase(key) }));
-}
-
-function deriveChartSeries(table: TableData): ChartPoint[] {
-  if (!table.rows.length) return [];
-
-  const dimensionKey = table.headers.find((header) => typeof table.rows[0]?.[header.key] === 'string')?.key ?? table.headers[0]?.key;
-  const numericKey = table.headers.find((header) => table.rows.some((row) => typeof row[header.key] === 'number'))?.key;
-
-  if (!dimensionKey || !numericKey) return [];
-
-  return table.rows.map((row, index) => ({
-    label: String(row[dimensionKey] ?? `Row ${index + 1}`),
-    value: Number(row[numericKey] ?? 0),
-  }));
 }
 
 function startCase(value: string): string {
@@ -414,56 +451,6 @@ function renderCell(value: unknown, key?: string) {
     }
   }
   return String(value);
-}
-
-function ResultChart({
-  series,
-  loading,
-  error,
-}: {
-  series: ChartPoint[];
-  loading: boolean;
-  error: string | null;
-}) {
-  if (loading) return <p className="muted">Preparing chart…</p>;
-
-  if (!series.length) {
-    return (
-      <div className="empty-state">
-        <div className="empty-state__icon">📊</div>
-        <h3 className="empty-state__title">Select columns to display chart</h3>
-        <p className="empty-state__message">
-          Choose KPIs and dimensions from the sidebar to visualize your data
-        </p>
-      </div>
-    );
-  }
-
-  const maxValue = Math.max(...series.map((item) => item.value), 0);
-
-  return (
-    <>
-      {error && (
-        <div className="alert alert--error">
-          <strong>Request failed</strong>
-          <p>{error}</p>
-        </div>
-      )}
-      <div className="chart">
-        {series.map((item, index) => {
-          const height = maxValue ? (item.value / maxValue) * 100 : 0;
-          return (
-            <div key={`${item.label}-${index}`} className="chart__bar">
-              <div className="chart__bar-fill" style={{ height: `${height}%` }}>
-                <span className="chart__value">{item.value}</span>
-              </div>
-              <span className="chart__label">{item.label}</span>
-            </div>
-          );
-        })}
-      </div>
-    </>
-  );
 }
 
 export default App;

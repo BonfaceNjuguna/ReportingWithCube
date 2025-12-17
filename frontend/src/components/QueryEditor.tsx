@@ -69,15 +69,6 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
   const availableDimensions = (schema?.dimensions ?? []).filter(d => isApplicable(d.applicableEventTypes));
   const availableMeasures = (schema?.measures ?? []).filter(m => isApplicable(m.applicableEventTypes));
 
-  const toggleSelection = (value: string, key: 'kpis' | 'groupBy') => {
-    setQuery((prev) => {
-      const current = prev[key] ?? [];
-      const exists = current.includes(value);
-      const next = exists ? current.filter((item) => item !== value) : [...current, value];
-      return { ...prev, [key]: next };
-    });
-  };
-
   const handleEventTypeChange = (selected: string[]) => {
     setQuery((prev) => {
       const filters = (prev.filters ?? []).filter(f => f.field !== 'event_type');
