@@ -58,10 +58,10 @@ public partial class DatasetRegistry
                 },
                 
                 // Financial measures (RFQ only)
-                ["quotation_total_best"] = new()
+                ["best_quotation_total"] = new()
                 {
-                    CubeMember = "EventsView.quotationTotalBest",
-                    Label = "Quotation Total (Best)",
+                    CubeMember = "EventsView.bestQuotationTotal",
+                    Label = "Best Quotation Total",
                     Type = "number",
                     Format = "currency",
                     ApplicableEventTypes = new[] { "RFQ" }

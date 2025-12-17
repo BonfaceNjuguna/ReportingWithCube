@@ -28,6 +28,74 @@ function App() {
   const [pageSize, setPageSize] = useState(100);
   const { data, loading, error, runQuery } = useAnalyticsQuery();
   const [drillDownPath, setDrillDownPath] = useState<Array<{ field: string; value: string }>>([]);
+  const [showPresets, setShowPresets] = useState(false);
+
+  type InsightPreset = {
+    id: string;
+    title: string;
+    description: string;
+    datasetId?: string;
+    kpis: string[];
+    groupBy: string[];
+    filters?: AnalyticsQuery['filters'];
+    sort?: AnalyticsQuery['sort'];
+  };
+
+  const insightPresets: InsightPreset[] = useMemo(() => [
+    {
+      id: 'volume-mix',
+      title: 'RFQ vs RFI volume over time',
+      description: 'Event count by type, trended by created date. Good for seasonality and mix.',
+      datasetId: 'events',
+      kpis: ['event_count'],
+      groupBy: ['created_at', 'event_type'],
+      sort: { by: 'created_at', direction: 'desc' }
+    },
+    {
+      id: 'status-funnel',
+      title: 'Status distribution',
+      description: 'Where events sit in the process. Stack by status and type.',
+      datasetId: 'events',
+      kpis: ['event_count'],
+      groupBy: ['state_name', 'event_type']
+    },
+    {
+      id: 'cycle-time',
+      title: 'Cycle & offer period trend',
+      description: 'Average cycle time and offer period over time, split by RFQ/RFI.',
+      datasetId: 'events',
+      kpis: ['avg_cycle_time_days', 'avg_offer_period_days'],
+      groupBy: ['created_at', 'event_type'],
+      sort: { by: 'created_at', direction: 'desc' }
+    },
+    {
+      id: 'supplier-engagement',
+      title: 'Supplier engagement',
+      description: 'Invited vs viewed vs offered vs rejected suppliers by event type.',
+      datasetId: 'events',
+      kpis: ['invited_suppliers_count', 'viewed_suppliers_count', 'offered_suppliers_count', 'rejected_suppliers_count'],
+      groupBy: ['event_type']
+    },
+    {
+      id: 'conversion-rates',
+      title: 'Conversion & response',
+      description: 'Quotation, response, and reject rates side-by-side per type.',
+      datasetId: 'events',
+      kpis: ['quotation_rate', 'response_rate', 'reject_rate'],
+      groupBy: ['event_type', 'created_at'],
+      sort: { by: 'created_at', direction: 'desc' }
+    },
+    {
+      id: 'rfq-value',
+      title: 'RFQ commercial impact',
+      description: 'Best and average quotation totals, rounds, and opened quotations (RFQ only).',
+      datasetId: 'events',
+      kpis: ['best_quotation_total', 'quotation_total_avg', 'opened_quotations_count', 'last_round_number'],
+      groupBy: ['created_at'],
+      filters: [{ field: 'event_type', operator: 'equals', value: 'RFQ' }],
+      sort: { by: 'created_at', direction: 'desc' }
+    }
+  ], []);
 
   const tableData = useMemo(() => {
     const result = deriveTableData(data);
@@ -45,6 +113,22 @@ function App() {
       }
     };
     runQuery(queryWithPagination);
+  };
+
+  const applyPreset = (preset: InsightPreset) => {
+    const nextQuery: AnalyticsQuery = {
+      ...currentQuery,
+      datasetId: preset.datasetId ?? currentQuery.datasetId,
+      kpis: preset.kpis,
+      groupBy: preset.groupBy,
+      filters: preset.filters ?? [],
+      advancedFilters: [],
+      sort: preset.sort ?? currentQuery.sort,
+      page: { limit: pageSize, offset: 0 }
+    };
+
+    setActiveTab('chart');
+    handleQueryChange(nextQuery);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -131,12 +215,35 @@ function App() {
             </p>
           </div>
           <div className="header-actions">
-            <button className="button button--ghost" type="button">
-              💾 Save Report
-            </button>
-            <button className="button button--ghost" type="button">
-              📤 Export
-            </button>
+            {activeTab === 'chart' && tableData.rows.length === 0 && (
+              <button 
+                className="button button--primary" 
+                type="button"
+                onClick={() => setShowPresets(!showPresets)}
+              >
+                ✨ Quick Start
+              </button>
+            )}
+            {tableData.rows.length > 0 && (
+              <>
+                <button 
+                  className="button button--ghost" 
+                  type="button"
+                  onClick={() => alert('Export functionality coming soon!')}
+                  title="Export current results to CSV"
+                >
+                  📤 Export
+                </button>
+                <button 
+                  className="button button--ghost" 
+                  type="button"
+                  onClick={() => alert('Save report functionality coming soon!')}
+                  title="Save this report configuration"
+                >
+                  💾 Save
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -147,25 +254,26 @@ function App() {
 
         <section className="layout__content">
           <div className="panel panel--flush">
-            <div className="panel__header" style={{ padding: '1.5rem 0 1rem 0', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0' }}>
+            <div className="panel__header" style={{ padding: '1rem 0', marginBottom: '1rem' }}>
               <div>
-                <h2 className="panel__title" style={{ fontSize: '1.25rem', margin: '0 0 0.5rem 0' }}>
-                  {tableData.rows.length > 0 ? `Report Results (${tableData.rows.length})` : 'Build Your Report'}
+                <h2 className="panel__title" style={{ fontSize: '1.125rem', margin: '0 0 0.375rem 0', fontWeight: 600 }}>
+                  {tableData.rows.length > 0 ? `Results (${tableData.rows.length.toLocaleString()} rows)` : 'Build Your Report'}
                 </h2>
-                <div className="breadcrumbs" style={{ fontSize: '0.8125rem' }}>
-                  {currentQuery.kpis.length > 0 && (
-                    <span>📊 {currentQuery.kpis.length} KPI{currentQuery.kpis.length > 1 ? 's' : ''}</span>
-                  )}
-                  {currentQuery.groupBy && currentQuery.groupBy.length > 0 && (
-                    <span>📋 {currentQuery.groupBy.length} Column{currentQuery.groupBy.length > 1 ? 's' : ''}</span>
-                  )}
-                  {currentQuery.filters && currentQuery.filters.length > 0 && (
-                    <span>🔍 {currentQuery.filters.length} Filter{currentQuery.filters.length > 1 ? 's' : ''}</span>
-                  )}
-                  {tableData.rows.length === 0 && currentQuery.kpis.length === 0 && (
-                    <span className="muted">Select KPIs and dimensions to start →</span>
-                  )}
-                </div>
+                {(currentQuery.kpis.length > 0 || currentQuery.groupBy?.length || currentQuery.filters?.length) ? (
+                  <div className="breadcrumbs" style={{ fontSize: '0.8125rem', gap: '0.75rem' }}>
+                    {currentQuery.kpis.length > 0 && (
+                      <span style={{ color: '#6366f1' }}>📊 {currentQuery.kpis.length} KPI{currentQuery.kpis.length > 1 ? 's' : ''}</span>
+                    )}
+                    {currentQuery.groupBy && currentQuery.groupBy.length > 0 && (
+                      <span style={{ color: '#8b5cf6' }}>📋 {currentQuery.groupBy.length} dimension{currentQuery.groupBy.length > 1 ? 's' : ''}</span>
+                    )}
+                    {currentQuery.filters && currentQuery.filters.length > 0 && (
+                      <span style={{ color: '#ec4899' }}>🔍 {currentQuery.filters.length} active filter{currentQuery.filters.length > 1 ? 's' : ''}</span>
+                    )}
+                  </div>
+                ) : (
+                  <p className="muted" style={{ margin: 0 }}>Choose KPIs and dimensions from the sidebar to begin</p>
+                )}
               </div>
             </div>
 
@@ -198,14 +306,77 @@ function App() {
             )}
 
             {activeTab === 'chart' && (
-              <AnalyticsChart
-                tableData={tableData}
-                query={currentQuery}
-                loading={loading}
-                onDrillDown={handleDrillDown}
-                onDrillUp={handleDrillUp}
-                drillDownPath={drillDownPath}
-              />
+              <>
+                {tableData.rows.length === 0 && (
+                  <div className="empty-state" style={{ padding: '2rem', margin: '1rem 0' }}>
+                    <div className="empty-state__icon">📊</div>
+                    <h3 className="empty-state__title">No data to visualize</h3>
+                    <p className="empty-state__message" style={{ marginBottom: '1.5rem' }}>
+                      Select KPIs and dimensions from the sidebar, then click "Run Query" to see your chart.
+                    </p>
+                    <button 
+                      type="button" 
+                      className="button button--secondary"
+                      onClick={() => setShowPresets(!showPresets)}
+                    >
+                      {showPresets ? '✕ Hide' : '✨ Show'} Quick Start Templates
+                    </button>
+                  </div>
+                )}
+
+                {showPresets && (
+                  <div className="panel" style={{ margin: '1rem 0', background: '#f8fafc' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <div>
+                        <p className="eyebrow">Quick start</p>
+                        <h3 style={{ margin: '0.25rem 0 0 0', fontSize: '1rem', fontWeight: 600 }}>Pre-configured Views</h3>
+                      </div>
+                      <button 
+                        type="button" 
+                        className="button button--ghost button--small"
+                        onClick={() => setShowPresets(false)}
+                      >
+                        ✕ Close
+                      </button>
+                    </div>
+                    <div className="option-grid">
+                      {insightPresets.map((preset) => (
+                        <div 
+                          key={preset.id}
+                          className="option-card" 
+                          style={{ cursor: 'pointer', flexDirection: 'column' }}
+                          onClick={() => {
+                            applyPreset(preset);
+                            setShowPresets(false);
+                          }}
+                        >
+                          <div className="option-card__title">{preset.title}</div>
+                          <p className="muted" style={{ margin: '0.25rem 0 0 0', fontSize: '0.8125rem', flex: 1 }}>
+                            {preset.description}
+                          </p>
+                          <button
+                            type="button"
+                            className="button button--secondary button--small"
+                            style={{ marginTop: '0.75rem', width: '100%' }}
+                            disabled={loading}
+                          >
+                            Apply
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <AnalyticsChart
+                  tableData={tableData}
+                  query={currentQuery}
+                  loading={loading}
+                  onDrillDown={handleDrillDown}
+                  onDrillUp={handleDrillUp}
+                  drillDownPath={drillDownPath}
+                />
+              </>
             )}
 
             {activeTab === 'details' && <QueryResult data={data} loading={loading} error={error} compact />}
@@ -225,11 +396,6 @@ interface TableData {
 interface TableHeader {
   key: string;
   label: string;
-}
-
-interface ChartPoint {
-  label: string;
-  value: number;
 }
 
 const emptyTable: TableData = {
@@ -299,9 +465,9 @@ function ResultTable({ table, loading, error, currentPage, pageSize, totalRows, 
     return (
       <div className="empty-state">
         <div className="empty-state__icon">📊</div>
-        <h3 className="empty-state__title">Select columns to display data</h3>
+        <h3 className="empty-state__title">No columns selected</h3>
         <p className="empty-state__message">
-          Choose KPIs and dimensions from the sidebar to build your report
+          Choose KPIs and dimensions from the sidebar, then click "Run Query"
         </p>
       </div>
     );
@@ -315,11 +481,6 @@ function ResultTable({ table, loading, error, currentPage, pageSize, totalRows, 
           <p>{error}</p>
         </div>
       )}
-
-      <div className="table-card__filters">
-        <span className="pill">{loading ? 'Updating...' : 'Live results'}</span>
-        <span className="pill">Real-time column selection</span>
-      </div>
 
       <div className="table-wrapper">
         <table className="data-table">
@@ -341,22 +502,13 @@ function ResultTable({ table, loading, error, currentPage, pageSize, totalRows, 
               ))
             ) : (
               <tr>
-                <td colSpan={table.headers.length} className="muted">
-                  No results yet. Adjust your query and try again.
+                <td colSpan={table.headers.length} className="muted" style={{ textAlign: 'center', padding: '2rem' }}>
+                  No results found. Try adjusting your filters.
                 </td>
               </tr>
             )}
           </tbody>
         </table>
-      </div>
-
-      <div className="table-card__actions">
-        <button className="button button--ghost" type="button">
-          Export CSV
-        </button>
-        <button className="button button--ghost" type="button">
-          Export XLS
-        </button>
       </div>
 
       {hasRows && totalRows > 0 && (

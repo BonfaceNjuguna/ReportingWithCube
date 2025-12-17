@@ -14,6 +14,7 @@ interface QueryEditorProps {
 export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEditorProps) {
   const [query, setQuery] = useState<AnalyticsQuery>(initialQuery);
   const { datasets, schema, loading: schemaLoading, error: schemaError, refreshSchema } = useDatasetSchema(initialQuery.datasetId);
+  const [selectedDateField, setSelectedDateField] = useState<string>('created_at');
 
   useEffect(() => {
     setQuery(initialQuery);
@@ -49,8 +50,6 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
     }
     return [];
   };
-
-  const [selectedDateField, setSelectedDateField] = useState<string>('created_at');
 
   const summary = useMemo(() => getSummary(query, schema), [query, schema]);
   const previewPayload = useMemo(() => JSON.stringify(buildPayload(query, schema), null, 2), [query, schema]);

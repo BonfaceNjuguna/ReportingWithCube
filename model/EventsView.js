@@ -467,50 +467,35 @@ cube(`EventsView`, {
     
     // ===== QUOTATION MEASURES =====
     
-    // Best (lowest) quotation total price
+    // Best (lowest) quotation total price - latest round, opened quotations, exclude quotations with invalid items (unit_price <= 0, item_type != 3)
     bestQuotationTotal: {
       sql: `
         (
           SELECT MIN(quotation_total)
           FROM (
-            SELECT q.id as quotation_id, COALESCE(SUM(qdi.total_price), 0) as quotation_total
+            SELECT q.id as quotation_id, q.total_price as quotation_total
             FROM public.quotation q
-            INNER JOIN public.quotation_document_item qdi ON qdi.document_header_id = q.id
             WHERE q.request_for_id = ${CUBE}.id
-              AND q.submitted_at IS NOT NULL
-              AND q.submitted_at != '-infinity'
-              AND (q.original_quotation_id IS NULL OR q.original_quotation_id = '00000000-0000-0000-0000-000000000000')
-            GROUP BY q.id
-            HAVING SUM(qdi.total_price) > 0
-          ) as quotation_totals
+              AND q.is_opened = true
+              AND q.round_number = (
+                SELECT MAX(inner_q.round_number)
+                FROM public.quotation inner_q
+                WHERE inner_q.request_for_id = q.request_for_id
+              )
+              AND NOT EXISTS (
+                SELECT 1
+                FROM public.quotation_document_item qdi
+                WHERE qdi.root_id = q.id
+                  AND qdi.unit_price <= 0
+                  AND qdi.item_type <> 3
+              )
+          ) as ranked_quotations
         )
       `,
       type: `max`,
       format: `currency`,
       title: `Best Quotation Total`,
-      description: `Lowest submitted quotation total price (calculated from line items)`
-    },
-
-    quotationTotalBest: {
-      sql: `
-        (
-          SELECT MIN(quotation_total)
-          FROM (
-            SELECT q.id as quotation_id, COALESCE(SUM(qdi.total_price), 0) as quotation_total
-            FROM public.quotation q
-            INNER JOIN public.quotation_document_item qdi ON qdi.document_header_id = q.id
-            WHERE q.request_for_id = ${CUBE}.id
-              AND q.submitted_at IS NOT NULL
-              AND q.submitted_at != '-infinity'
-              AND (q.original_quotation_id IS NULL OR q.original_quotation_id = '00000000-0000-0000-0000-000000000000')
-            GROUP BY q.id
-            HAVING SUM(qdi.total_price) > 0
-          ) as quotation_totals
-        )
-      `,
-      type: `max`,
-      format: `currency`,
-      title: `Quotation Total (Best)`
+      description: `Lowest opened quotation from latest round (excludes quotations with invalid pricing)`
     },
 
     quotationTotalAvg: {
@@ -518,16 +503,23 @@ cube(`EventsView`, {
         (
           SELECT AVG(quotation_total)
           FROM (
-            SELECT q.id as quotation_id, COALESCE(SUM(qdi.total_price), 0) as quotation_total
+            SELECT q.id as quotation_id, q.total_price as quotation_total
             FROM public.quotation q
-            INNER JOIN public.quotation_document_item qdi ON qdi.document_header_id = q.id
             WHERE q.request_for_id = ${CUBE}.id
-              AND q.submitted_at IS NOT NULL
-              AND q.submitted_at != '-infinity'
-              AND (q.original_quotation_id IS NULL OR q.original_quotation_id = '00000000-0000-0000-0000-000000000000')
-            GROUP BY q.id
-            HAVING SUM(qdi.total_price) > 0
-          ) as quotation_totals
+              AND q.is_opened = true
+              AND q.round_number = (
+                SELECT MAX(inner_q.round_number)
+                FROM public.quotation inner_q
+                WHERE inner_q.request_for_id = q.request_for_id
+              )
+              AND NOT EXISTS (
+                SELECT 1
+                FROM public.quotation_document_item qdi
+                WHERE qdi.root_id = q.id
+                  AND qdi.unit_price <= 0
+                  AND qdi.item_type <> 3
+              )
+          ) as ranked_quotations
         )
       `,
       type: `max`,
@@ -540,16 +532,23 @@ cube(`EventsView`, {
         (
           SELECT SUM(quotation_total)
           FROM (
-            SELECT q.id as quotation_id, COALESCE(SUM(qdi.total_price), 0) as quotation_total
+            SELECT q.id as quotation_id, q.total_price as quotation_total
             FROM public.quotation q
-            INNER JOIN public.quotation_document_item qdi ON qdi.document_header_id = q.id
             WHERE q.request_for_id = ${CUBE}.id
-              AND q.submitted_at IS NOT NULL
-              AND q.submitted_at != '-infinity'
-              AND (q.original_quotation_id IS NULL OR q.original_quotation_id = '00000000-0000-0000-0000-000000000000')
-            GROUP BY q.id
-            HAVING SUM(qdi.total_price) > 0
-          ) as quotation_totals
+              AND q.is_opened = true
+              AND q.round_number = (
+                SELECT MAX(inner_q.round_number)
+                FROM public.quotation inner_q
+                WHERE inner_q.request_for_id = q.request_for_id
+              )
+              AND NOT EXISTS (
+                SELECT 1
+                FROM public.quotation_document_item qdi
+                WHERE qdi.root_id = q.id
+                  AND qdi.unit_price <= 0
+                  AND qdi.item_type <> 3
+              )
+          ) as ranked_quotations
         )
       `,
       type: `max`,
