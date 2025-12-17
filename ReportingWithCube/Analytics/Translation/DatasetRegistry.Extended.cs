@@ -276,14 +276,8 @@ public partial class DatasetRegistry
                 },
                 ["deadline"] = new()
                 {
-                    CubeMember = "EventsView.deadline",
-                    Label = "Deadline",
-                    Type = "time"
-                },
-                ["submission_deadline"] = new()
-                {
                     CubeMember = "EventsView.submissionDeadline",
-                    Label = "Submission Deadline",
+                    Label = "Deadline",
                     Type = "time"
                 },
                 ["awarded_at"] = new()
@@ -394,13 +388,7 @@ public partial class DatasetRegistry
                 },
                 ["deadline"] = new()
                 {
-                    Label = "Submission Deadline",
-                    Type = FilterType.Time,
-                    CubeMember = "EventsView.submissionDeadline",
-                    AllowedOperators = ["inDateRange", "afterDate", "beforeDate"]
-                },
-                ["submission_deadline"] = new()
-                {
+                    Label = "Deadline",
                     Type = FilterType.Time,
                     CubeMember = "EventsView.submissionDeadline",
                     AllowedOperators = ["inDateRange", "afterDate", "beforeDate"]

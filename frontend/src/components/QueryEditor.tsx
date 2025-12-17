@@ -50,6 +50,8 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
     return [];
   };
 
+  const [selectedDateField, setSelectedDateField] = useState<string>('created_at');
+
   const summary = useMemo(() => getSummary(query, schema), [query, schema]);
   const previewPayload = useMemo(() => JSON.stringify(buildPayload(query, schema), null, 2), [query, schema]);
 
@@ -72,15 +74,7 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
       const current = prev[key] ?? [];
       const exists = current.includes(value);
       const next = exists ? current.filter((item) => item !== value) : [...current, value];
-      const updated = { ...prev, [key]: next };
-      
-      // Auto-run query when selection changes
-      setTimeout(() => {
-        const payload = buildPayload(updated, schema);
-        onSubmit(payload);
-      }, 100);
-      
-      return updated;
+      return { ...prev, [key]: next };
     });
   };
 
@@ -94,17 +88,7 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
           value: selected.join(',')
         });
       }
-      const updated = { ...prev, filters };
-      
-      // Only auto-run query if KPIs are selected
-      if ((updated.kpis ?? []).length > 0) {
-        setTimeout(() => {
-          const payload = buildPayload(updated, schema);
-          onSubmit(payload);
-        }, 100);
-      }
-      
-      return updated;
+      return { ...prev, filters };
     });
   };
 
@@ -118,17 +102,50 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
           value: selected.join(',')
         });
       }
-      const updated = { ...prev, filters };
+      return { ...prev, filters };
+    });
+  };
+
+  const getDateFilterValue = (type: 'from' | 'to'): string => {
+    const filter = query.filters?.find(f => f.field === selectedDateField && f.operator === 'inDateRange');
+    if (!filter || typeof filter.value !== 'string') return '';
+    
+    const dates = filter.value.split(',');
+    return type === 'from' ? (dates[0] || '') : (dates[1] || '');
+  };
+
+  const handleDateChange = (type: 'from' | 'to', value: string) => {
+    setQuery((prev) => {
+      const filters = (prev.filters ?? []).filter(f => f.field !== selectedDateField);
       
-      // Only auto-run query if KPIs are selected
-      if ((updated.kpis ?? []).length > 0) {
-        setTimeout(() => {
-          const payload = buildPayload(updated, schema);
-          onSubmit(payload);
-        }, 100);
+      // Get existing values
+      const existingFilter = (prev.filters ?? []).find(f => f.field === selectedDateField && f.operator === 'inDateRange');
+      let fromDate = '';
+      let toDate = '';
+      
+      if (existingFilter && typeof existingFilter.value === 'string') {
+        const dates = existingFilter.value.split(',');
+        fromDate = dates[0] || '';
+        toDate = dates[1] || '';
       }
       
-      return updated;
+      // Update the changed value
+      if (type === 'from') {
+        fromDate = value;
+      } else {
+        toDate = value;
+      }
+      
+      // Only add filter if at least one date is set
+      if (fromDate || toDate) {
+        filters.push({
+          field: selectedDateField,
+          operator: 'inDateRange',
+          value: `${fromDate},${toDate}`
+        });
+      }
+      
+      return { ...prev, filters };
     });
   };
 
@@ -207,7 +224,7 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
         <div className="editor-section__header">
           <div>
             <p className="eyebrow">🔍 Quick Filters</p>
-            <p className="panel__title">Event Type & Status</p>
+            <p className="panel__title">Event Type, Status & Dates</p>
           </div>
         </div>
         
@@ -226,6 +243,42 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
           onChange={handleStatusChange}
           placeholder="Select statuses..."
         />
+
+        <div className="date-filter-group">
+          <label className="field__label">📅 Date Range</label>
+          
+          <div className="date-field">
+            <label className="field__label field__label--small">Date Field</label>
+            <select
+              className="field__input"
+              value={selectedDateField}
+              onChange={(e) => setSelectedDateField(e.target.value)}
+            >
+              <option value="created_at">Created At</option>
+              <option value="deadline">Deadline</option>
+            </select>
+          </div>
+
+          <div className="date-field">
+            <label className="field__label field__label--small">From</label>
+            <input
+              type="date"
+              className="field__input"
+              value={getDateFilterValue('from')}
+              onChange={(e) => handleDateChange('from', e.target.value)}
+            />
+          </div>
+
+          <div className="date-field">
+            <label className="field__label field__label--small">To</label>
+            <input
+              type="date"
+              className="field__input"
+              value={getDateFilterValue('to')}
+              onChange={(e) => handleDateChange('to', e.target.value)}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Advanced Filters with OR Support */}
@@ -233,19 +286,27 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
         filters={query.advancedFilters ?? []}
         availableFilters={availableFilters}
         onChange={(advancedFilters) => {
-          setQuery((prev) => {
-            const updated = { ...prev, advancedFilters };
-            // Auto-run query if KPIs are selected
-            if ((updated.kpis ?? []).length > 0) {
-              setTimeout(() => {
-                const payload = buildPayload(updated, schema);
-                onSubmit(payload);
-              }, 100);
-            }
-            return updated;
-          });
+          setQuery((prev) => ({ ...prev, advancedFilters }));
         }}
       />
+
+      {/* Run Query Button */}
+      <div className="query-action">
+        <button
+          type="button"
+          className="button button--primary button--large"
+          onClick={() => {
+            const payload = buildPayload(query);
+            onSubmit(payload);
+          }}
+          disabled={loading}
+        >
+          {loading ? '⏳ Loading Data...' : '▶️ Run Query'}
+        </button>
+        <p className="muted" style={{ fontSize: '0.8rem', marginTop: '0.5rem', textAlign: 'center' }}>
+          Quick filters require Run Query • Columns update automatically
+        </p>
+      </div>
 
       <div className="field">
         <span className="field__label">Dataset</span>
@@ -279,7 +340,15 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
                 <input
                   type="checkbox"
                   checked={query.groupBy?.includes(dimension.id) ?? false}
-                  onChange={() => toggleSelection(dimension.id, 'groupBy')}
+                  onChange={() => {
+                    const updatedGroupBy = query.groupBy?.includes(dimension.id)
+                      ? query.groupBy.filter(id => id !== dimension.id)
+                      : [...(query.groupBy ?? []), dimension.id];
+                    const updatedQuery = { ...query, groupBy: updatedGroupBy };
+                    setQuery(updatedQuery);
+                    const payload = buildPayload(updatedQuery, schema);
+                    onSubmit(payload);
+                  }}
                 />
                 <div>
                   <p className="option-card__title">{dimension.label}</p>
@@ -305,7 +374,15 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
                 <input
                   type="checkbox"
                   checked={query.kpis.includes(measure.id)}
-                  onChange={() => toggleSelection(measure.id, 'kpis')}
+                  onChange={() => {
+                    const updatedKpis = query.kpis.includes(measure.id)
+                      ? query.kpis.filter(id => id !== measure.id)
+                      : [...query.kpis, measure.id];
+                    const updatedQuery = { ...query, kpis: updatedKpis };
+                    setQuery(updatedQuery);
+                    const payload = buildPayload(updatedQuery, schema);
+                    onSubmit(payload);
+                  }}
                 />
                 <div>
                   <p className="option-card__title">{measure.label}</p>
@@ -438,7 +515,11 @@ function buildPayload(query: AnalyticsQuery, schema?: DatasetSchema | null): Ana
       return { ...filter, value: normalizedValue } as AnalyticsFilter;
     });
 
-  return { ...query, filters, advancedFilters };
+  return { 
+    ...query, 
+    filters, 
+    advancedFilters
+  };
 }
 
 function normalizeFilterValue(value: AnalyticsFilter['value'], operator: FilterOperator, type?: string) {

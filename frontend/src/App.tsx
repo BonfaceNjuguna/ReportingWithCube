@@ -7,8 +7,8 @@ import type { AnalyticsQuery, AnalyticsResponse, ColumnMetadata } from './types/
 
 const defaultQuery: AnalyticsQuery = {
   datasetId: 'events',
-  kpis: [],
-  groupBy: [],
+  kpis: ['event_count', 'cycle_time_days'],
+  groupBy: ['event_number', 'event_name', 'event_type', 'state_name'],
   filters: [],
   sort: {
     by: 'created_at',
@@ -23,17 +23,52 @@ const defaultQuery: AnalyticsQuery = {
 function App() {
   const [activeTab, setActiveTab] = useState<'table' | 'chart' | 'details'>('table');
   const [currentQuery, setCurrentQuery] = useState<AnalyticsQuery>(defaultQuery);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(100);
   const { data, loading, error, runQuery } = useAnalyticsQuery();
 
   const tableData = useMemo(() => {
-    const result = deriveTableData(data);
+    const result = deriveTableData(data, currentQuery);
     return result;
-  }, [data]);
+  }, [data, currentQuery]);
   const chartSeries = useMemo(() => deriveChartSeries(tableData), [tableData]);
 
   const handleQueryChange = (query: AnalyticsQuery) => {
     setCurrentQuery(query);
-    runQuery(query);
+    setCurrentPage(0); // Reset to first page on query change
+    const queryWithPagination = {
+      ...query,
+      page: {
+        limit: pageSize,
+        offset: 0
+      }
+    };
+    runQuery(queryWithPagination);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    const queryWithPagination = {
+      ...currentQuery,
+      page: {
+        limit: pageSize,
+        offset: newPage * pageSize
+      }
+    };
+    runQuery(queryWithPagination);
+  };
+
+  const handlePageSizeChange = (newSize: number) => {
+    setPageSize(newSize);
+    setCurrentPage(0);
+    const queryWithPagination = {
+      ...currentQuery,
+      page: {
+        limit: newSize,
+        offset: 0
+      }
+    };
+    runQuery(queryWithPagination);
   };
 
   // Don't run query on mount - let user build their query first
@@ -105,7 +140,18 @@ function App() {
               ))}
             </div>
 
-            {activeTab === 'table' && <ResultTable table={tableData} loading={loading} error={error} />}
+            {activeTab === 'table' && (
+              <ResultTable 
+                table={tableData} 
+                loading={loading} 
+                error={error}
+                currentPage={currentPage}
+                pageSize={pageSize}
+                totalRows={data?.query?.rowCount ?? 0}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            )}
 
             {activeTab === 'chart' && (
               <ResultChart series={chartSeries} loading={loading} error={error} />
@@ -141,7 +187,7 @@ const emptyTable: TableData = {
   rows: [],
 };
 
-function deriveTableData(response: AnalyticsResponse | null): TableData {
+function deriveTableData(response: AnalyticsResponse | null, query?: AnalyticsQuery): TableData {
   const payload = response?.data;
 
   if (Array.isArray(payload)) {
@@ -189,13 +235,27 @@ function startCase(value: string): string {
     .replace(/^./, (char) => char.toUpperCase());
 }
 
-function ResultTable({ table, loading, error }: { table: TableData; loading: boolean; error: string | null }) {
+interface ResultTableProps {
+  table: TableData;
+  loading: boolean;
+  error: string | null;
+  currentPage: number;
+  pageSize: number;
+  totalRows: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
+}
+
+function ResultTable({ table, loading, error, currentPage, pageSize, totalRows, onPageChange, onPageSizeChange }: ResultTableProps) {
   if (loading) {
     return <p className="muted">Fetching data…</p>;
   }
 
   const hasRows = table.rows.length > 0;
   const hasHeaders = table.headers.length > 0;
+  const totalPages = Math.ceil(totalRows / pageSize);
+  const startRow = currentPage * pageSize + 1;
+  const endRow = Math.min((currentPage + 1) * pageSize, totalRows);
 
   // Show empty state if no headers (no columns selected)
   if (!hasHeaders) {
@@ -261,6 +321,62 @@ function ResultTable({ table, loading, error }: { table: TableData; loading: boo
           Export XLS
         </button>
       </div>
+
+      {hasRows && totalRows > 0 && (
+        <div className="pagination">
+          <div className="pagination__info">
+            <span>Showing {startRow}-{endRow} of {totalRows} rows</span>
+            <select 
+              className="pagination__size-select"
+              value={pageSize} 
+              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+            >
+              <option value={25}>25 per page</option>
+              <option value={50}>50 per page</option>
+              <option value={100}>100 per page</option>
+              <option value={250}>250 per page</option>
+              <option value={500}>500 per page</option>
+            </select>
+          </div>
+          <div className="pagination__controls">
+            <button 
+              className="pagination__button"
+              onClick={() => onPageChange(0)}
+              disabled={currentPage === 0}
+              title="First page"
+            >
+              «
+            </button>
+            <button 
+              className="pagination__button"
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage === 0}
+              title="Previous page"
+            >
+              ‹
+            </button>
+            <span className="pagination__page-info">
+              Page {currentPage + 1} of {totalPages}
+            </span>
+            <button 
+              className="pagination__button"
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages - 1}
+              title="Next page"
+            >
+              ›
+            </button>
+            <button 
+              className="pagination__button"
+              onClick={() => onPageChange(totalPages - 1)}
+              disabled={currentPage >= totalPages - 1}
+              title="Last page"
+            >
+              »
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
