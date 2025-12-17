@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import './App.css';
 import { QueryEditor } from './components/QueryEditor';
 import { QueryResult } from './components/QueryResult';
@@ -7,47 +7,9 @@ import type { AnalyticsQuery, AnalyticsResponse, ColumnMetadata } from './types/
 
 const defaultQuery: AnalyticsQuery = {
   datasetId: 'events',
-  kpis: [
-    'invited_suppliers_count',
-    'viewed_suppliers_count',
-    'offered_suppliers_count',
-    'rejected_suppliers_count',
-    'quotation_total_avg',
-    'best_quotation_total',
-    'offer_period_days',
-    'cycle_time_days',
-    'quotation_rate',
-    'reject_rate',
-  ],
-  groupBy: [
-    'event_id',
-    'event_number',
-    'event_name',
-    'created_by',
-    'created_at',
-    'started_at',
-    'deadline',
-    'awarded_at',
-    'state_name',
-    'technical_contact',
-    'commercial_contact',
-    'purchase_organisation',
-    'company_code',
-    'purchase_group',
-    'event_type',
-  ],
-  filters: [
-    {
-      field: 'event_type',
-      operator: 'equals',
-      value: 'RFQ',
-    },
-    {
-      field: 'state_name',
-      operator: 'equals',
-      value: 'Closed',
-    },
-  ],
+  kpis: [],
+  groupBy: [],
+  filters: [],
   sort: {
     by: 'created_at',
     direction: 'desc',
@@ -60,50 +22,71 @@ const defaultQuery: AnalyticsQuery = {
 
 function App() {
   const [activeTab, setActiveTab] = useState<'table' | 'chart' | 'details'>('table');
+  const [currentQuery, setCurrentQuery] = useState<AnalyticsQuery>(defaultQuery);
   const { data, loading, error, runQuery } = useAnalyticsQuery();
 
-  const tableData = useMemo(() => deriveTableData(data), [data]);
+  const tableData = useMemo(() => {
+    const result = deriveTableData(data);
+    return result;
+  }, [data]);
   const chartSeries = useMemo(() => deriveChartSeries(tableData), [tableData]);
 
-  useEffect(() => {
-    runQuery(defaultQuery);
-  }, [runQuery]);
+  const handleQueryChange = (query: AnalyticsQuery) => {
+    setCurrentQuery(query);
+    runQuery(query);
+  };
+
+  // Don't run query on mount - let user build their query first
+  // useEffect(() => {
+  //   runQuery(defaultQuery);
+  // }, [runQuery]);
 
   return (
     <main className="app">
       <header className="app__bar">
-        <div>
-          <p className="eyebrow">Active report</p>
-          <h1>Cycle Time by Supplier</h1>
-          <p className="muted">RFQ / RFP, last 90 days</p>
-        </div>
-        <div className="header-actions">
-          <button className="button button--ghost" type="button">
-            Share
-          </button>
-          <button className="button" type="button">
-            Save
-          </button>
+        <div className="app__bar-content">
+          <div>
+            <h1>📊 Event Analytics & Reporting</h1>
+            <p className="muted" style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem' }}>
+              Build custom reports for RFQ, RFI, and supplier data
+            </p>
+          </div>
+          <div className="header-actions">
+            <button className="button button--ghost" type="button">
+              💾 Save Report
+            </button>
+            <button className="button button--ghost" type="button">
+              📤 Export
+            </button>
+          </div>
         </div>
       </header>
-
       <section className="layout">
         <aside className="layout__sidebar">
-          <QueryEditor initialQuery={defaultQuery} loading={loading} onSubmit={runQuery} error={error} />
+          <QueryEditor initialQuery={defaultQuery} loading={loading} onSubmit={handleQueryChange} error={error} />
         </aside>
 
         <section className="layout__content">
           <div className="panel panel--flush">
-            <div className="panel__header">
+            <div className="panel__header" style={{ padding: '1.5rem 0 1rem 0', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0' }}>
               <div>
-                <p className="eyebrow">Report preview</p>
-                <h2 className="panel__title">Cycle Time by Supplier</h2>
-                <p className="panel__subtitle">Grouped by supplier with awarded status in the last 90 days.</p>
-              </div>
-              <div className="breadcrumbs">
-                <span>Dataset: events</span>
-                <span>Filters: RFQ • Closed</span>
-                <span>Grouped by supplier</span>
+                <h2 className="panel__title" style={{ fontSize: '1.25rem', margin: '0 0 0.5rem 0' }}>
+                  {tableData.rows.length > 0 ? `Report Results (${tableData.rows.length})` : 'Build Your Report'}
+                </h2>
+                <div className="breadcrumbs" style={{ fontSize: '0.8125rem' }}>
+                  {currentQuery.kpis.length > 0 && (
+                    <span>📊 {currentQuery.kpis.length} KPI{currentQuery.kpis.length > 1 ? 's' : ''}</span>
+                  )}
+                  {currentQuery.groupBy && currentQuery.groupBy.length > 0 && (
+                    <span>📋 {currentQuery.groupBy.length} Column{currentQuery.groupBy.length > 1 ? 's' : ''}</span>
+                  )}
+                  {currentQuery.filters && currentQuery.filters.length > 0 && (
+                    <span>🔍 {currentQuery.filters.length} Filter{currentQuery.filters.length > 1 ? 's' : ''}</span>
+                  )}
+                  {tableData.rows.length === 0 && currentQuery.kpis.length === 0 && (
+                    <span className="muted">Select KPIs and dimensions to start →</span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -125,7 +108,7 @@ function App() {
             {activeTab === 'table' && <ResultTable table={tableData} loading={loading} error={error} />}
 
             {activeTab === 'chart' && (
-              <ResultChart series={chartSeries} loading={loading} error={error} isSample={tableData.source === 'sample'} />
+              <ResultChart series={chartSeries} loading={loading} error={error} />
             )}
 
             {activeTab === 'details' && <QueryResult data={data} loading={loading} error={error} compact />}
@@ -152,18 +135,10 @@ interface ChartPoint {
   value: number;
 }
 
-const fallbackTable: TableData = {
+const emptyTable: TableData = {
   source: 'sample',
-  headers: [
-    { key: 'supplier', label: 'Supplier' },
-    { key: 'events', label: '# Events' },
-    { key: 'avgDays', label: 'Avg days' },
-    { key: 'spend', label: 'Spend (M)' },
-  ],
-  rows: [
-    { supplier: 'Acme', events: 12, avgDays: 5.3, spend: 2.1 },
-    { supplier: 'Globex', events: 8, avgDays: 7.1, spend: 1.4 },
-  ],
+  headers: [],
+  rows: [],
 };
 
 function deriveTableData(response: AnalyticsResponse | null): TableData {
@@ -177,7 +152,7 @@ function deriveTableData(response: AnalyticsResponse | null): TableData {
     }
   }
 
-  return fallbackTable;
+  return emptyTable;
 }
 
 function deriveHeaders(rows: Array<Record<string, unknown>>, columns?: ColumnMetadata[]): TableHeader[] {
@@ -220,19 +195,33 @@ function ResultTable({ table, loading, error }: { table: TableData; loading: boo
   }
 
   const hasRows = table.rows.length > 0;
+  const hasHeaders = table.headers.length > 0;
+
+  // Show empty state if no headers (no columns selected)
+  if (!hasHeaders) {
+    return (
+      <div className="empty-state">
+        <div className="empty-state__icon">📊</div>
+        <h3 className="empty-state__title">Select columns to display data</h3>
+        <p className="empty-state__message">
+          Choose KPIs and dimensions from the sidebar to build your report
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="table-card">
-      {(error || table.source === 'sample') && (
+      {error && (
         <div className="alert alert--error">
-          <strong>{table.source === 'sample' ? 'Showing sample data' : 'Request failed'}</strong>
-          <p>{error ?? 'Run a query to fetch live results.'}</p>
+          <strong>Request failed</strong>
+          <p>{error}</p>
         </div>
       )}
 
       <div className="table-card__filters">
-        <span className="pill">Dynamic results</span>
-        <span className="pill">Groupings & KPIs match your selections</span>
+        <span className="pill">{loading ? 'Updating...' : 'Live results'}</span>
+        <span className="pill">Real-time column selection</span>
       </div>
 
       <div className="table-wrapper">
@@ -249,7 +238,7 @@ function ResultTable({ table, loading, error }: { table: TableData; loading: boo
               table.rows.map((row, rowIndex) => (
                 <tr key={rowIndex}>
                   {table.headers.map((header) => (
-                    <td key={header.key}>{renderCell(row[header.key])}</td>
+                    <td key={header.key}>{renderCell(row[header.key], header.key)}</td>
                   ))}
                 </tr>
               ))
@@ -276,10 +265,38 @@ function ResultTable({ table, loading, error }: { table: TableData; loading: boo
   );
 }
 
-function renderCell(value: unknown) {
+function renderCell(value: unknown, key?: string) {
   if (value === null || value === undefined) return '—';
-  if (typeof value === 'number') return value.toLocaleString();
+  if (typeof value === 'number') {
+    // Format time-based KPIs (days) as integers - MUST CHECK FIRST
+    if (key && (key.includes('cycle_time') || key.includes('offer_period') || key.toLowerCase().includes('_days'))) {
+      return Math.round(value).toLocaleString() + ' days';
+    }
+    // Format percentages - CHECK BEFORE currency
+    if (key && (key.includes('rate') || key.includes('percent'))) {
+      return value.toFixed(1) + '%';
+    }
+    // Format currency values
+    if (key && (key.includes('total') || key.includes('price') || key.includes('volume'))) {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(value);
+    }
+    // Format count values
+    if (key && key.includes('count')) {
+      return Math.round(value).toLocaleString();
+    }
+    // Default number formatting
+    return value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  // Format dates
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+    try {
+      const date = new Date(value);
+      return date.toLocaleDateString();
+    } catch {
+      return value;
+    }
+  }
   return String(value);
 }
 
@@ -287,27 +304,33 @@ function ResultChart({
   series,
   loading,
   error,
-  isSample,
 }: {
   series: ChartPoint[];
   loading: boolean;
   error: string | null;
-  isSample: boolean;
 }) {
   if (loading) return <p className="muted">Preparing chart…</p>;
 
   if (!series.length) {
-    return <p className="muted">Add a grouping and KPI to see a chart.</p>;
+    return (
+      <div className="empty-state">
+        <div className="empty-state__icon">📊</div>
+        <h3 className="empty-state__title">Select columns to display chart</h3>
+        <p className="empty-state__message">
+          Choose KPIs and dimensions from the sidebar to visualize your data
+        </p>
+      </div>
+    );
   }
 
   const maxValue = Math.max(...series.map((item) => item.value), 0);
 
   return (
     <>
-      {(error || isSample) && (
+      {error && (
         <div className="alert alert--error">
-          <strong>{isSample ? 'Using sample data' : 'Request failed'}</strong>
-          <p>{error ?? 'Run a query to replace the demo chart.'}</p>
+          <strong>Request failed</strong>
+          <p>{error}</p>
         </div>
       )}
       <div className="chart">

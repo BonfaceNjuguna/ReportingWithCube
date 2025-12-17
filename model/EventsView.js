@@ -269,7 +269,7 @@ cube(`EventsView`, {
       sql: `
             CASE 
               WHEN ${CUBE}.started_date IS NOT NULL AND ${CUBE}.deadline IS NOT NULL 
-              THEN EXTRACT(EPOCH FROM (${CUBE}.deadline - ${CUBE}.started_date)) / 86400
+              THEN ROUND(EXTRACT(EPOCH FROM (${CUBE}.deadline - ${CUBE}.started_date)) / 86400)
               ELSE NULL
             END`,
       type: `max`,
@@ -282,7 +282,7 @@ cube(`EventsView`, {
       sql: `
             CASE 
               WHEN ${CUBE}.started_date IS NOT NULL AND ${CUBE}.deadline IS NOT NULL 
-              THEN EXTRACT(EPOCH FROM (${CUBE}.deadline - ${CUBE}.started_date)) / 86400
+              THEN ROUND(EXTRACT(EPOCH FROM (${CUBE}.deadline - ${CUBE}.started_date)) / 86400)
               ELSE NULL
             END`,
       type: `avg`,
@@ -294,7 +294,7 @@ cube(`EventsView`, {
       sql: `
             CASE
               WHEN ${CUBE}.awarded_at IS NOT NULL AND ${CUBE}.started_date IS NOT NULL
-              THEN EXTRACT(EPOCH FROM (${CUBE}.awarded_at - ${CUBE}.started_date)) / 86400
+              THEN ROUND(EXTRACT(EPOCH FROM (${CUBE}.awarded_at - ${CUBE}.started_date)) / 86400)
               ELSE NULL
             END`,
       type: `max`,
@@ -307,7 +307,7 @@ cube(`EventsView`, {
       sql: `
             CASE
               WHEN ${CUBE}.awarded_at IS NOT NULL AND ${CUBE}.started_date IS NOT NULL
-              THEN EXTRACT(EPOCH FROM (${CUBE}.awarded_at - ${CUBE}.started_date)) / 86400
+              THEN ROUND(EXTRACT(EPOCH FROM (${CUBE}.awarded_at - ${CUBE}.started_date)) / 86400)
               ELSE NULL
             END`,
       type: `avg`,
@@ -492,7 +492,22 @@ cube(`EventsView`, {
     },
 
     quotationTotalBest: {
-      sql: `${bestQuotationTotal}`,
+      sql: `
+        (
+          SELECT MIN(quotation_total)
+          FROM (
+            SELECT q.id as quotation_id, COALESCE(SUM(qdi.total_price), 0) as quotation_total
+            FROM public.quotation q
+            INNER JOIN public.quotation_document_item qdi ON qdi.document_header_id = q.id
+            WHERE q.request_for_id = ${CUBE}.id
+              AND q.submitted_at IS NOT NULL
+              AND q.submitted_at != '-infinity'
+              AND (q.original_quotation_id IS NULL OR q.original_quotation_id = '00000000-0000-0000-0000-000000000000')
+            GROUP BY q.id
+            HAVING SUM(qdi.total_price) > 0
+          ) as quotation_totals
+        )
+      `,
       type: `max`,
       format: `currency`,
       title: `Quotation Total (Best)`

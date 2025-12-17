@@ -25,3 +25,13 @@ body {
 a {
   color: inherit;
 }
+
+select {
+  background-color: #ffffff !important;
+  color: #1a202c !important;
+}
+
+select option {
+  background-color: #ffffff !important;
+  color: #1a202c !important;
+}

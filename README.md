@@ -1,5 +1,16 @@
 # RFQ Reporting System - Backend
 
+## Key Features
+
+✅ **Interactive Query Builder** - Select KPIs, dimensions, and filters in real-time  
+✅ **Advanced Filters with OR Support** - Combine multiple filter expressions with AND/OR logic  
+✅ **Dynamic Field Filtering** - Show only RFQ or RFI-specific fields based on Event Type  
+✅ **Real-time Updates** - Auto-run queries as you select columns (100ms debounce)  
+✅ **Responsive Design** - Full-page layout with sticky sidebar  
+✅ **Empty State UX** - Clean messaging when no data is selected  
+
+📖 **See [ADVANCED-FILTERS-GUIDE.md](ADVANCED-FILTERS-GUIDE.md) for filtering examples**
+
 ## Architecture Overview
 
 ```

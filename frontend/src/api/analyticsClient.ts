@@ -1,4 +1,4 @@
-import type { AnalyticsQuery, AnalyticsResponse, DatasetSchema, DatasetSummary } from '../types/analytics';
+import type { AnalyticsQuery, AnalyticsQueryRequest, AnalyticsResponse, DatasetSchema, DatasetSummary, FilterGroup } from '../types/analytics';
 
 const API_ROOT = '/api/analytics/v1';
 const ANALYTICS_PATH = `${API_ROOT}/query`;
@@ -8,12 +8,15 @@ const API_BASE_URL = resolveApiBaseUrl();
 export async function postAnalyticsQuery<Payload = unknown, Result = AnalyticsResponse<Payload>>(
   query: AnalyticsQuery,
 ): Promise<Result> {
+  // Convert advancedFilters to filterGroups for backend
+  const requestPayload: AnalyticsQueryRequest = convertToBackendFormat(query);
+  
   const response = await fetch(buildUrl(ANALYTICS_PATH), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(query),
+    body: JSON.stringify(requestPayload),
   });
 
   if (!response.ok) {
@@ -22,6 +25,52 @@ export async function postAnalyticsQuery<Payload = unknown, Result = AnalyticsRe
   }
 
   return response.json();
+}
+
+function convertToBackendFormat(query: AnalyticsQuery): AnalyticsQueryRequest {
+  const filterGroups: FilterGroup[] = [];
+  
+  // Convert advancedFilters with combinators to filterGroups
+  // Group consecutive filters with the same combinator together
+  if (query.advancedFilters && query.advancedFilters.length > 0) {
+    let currentGroup: typeof query.advancedFilters = [];
+    let currentLogic: 'and' | 'or' = query.advancedFilters[0].combinator || 'and';
+    
+    query.advancedFilters.forEach((filter, index) => {
+      // The combinator on a filter determines how it connects to the NEXT filter
+      // So we use the combinator from the PREVIOUS filter for grouping
+      const filterLogic = index === 0 ? currentLogic : (query.advancedFilters![index - 1].combinator || 'and');
+      
+      // If logic changes from previous, start new group
+      if (currentGroup.length > 0 && filterLogic !== currentLogic) {
+        filterGroups.push({
+          logic: currentLogic,
+          filters: currentGroup.map(f => ({ field: f.field, operator: f.operator, value: f.value }))
+        });
+        currentGroup = [filter];
+        currentLogic = filter.combinator || 'and';
+      } else {
+        currentGroup.push(filter);
+        if (index < query.advancedFilters!.length - 1) {
+          currentLogic = filter.combinator || 'and';
+        }
+      }
+    });
+    
+    // Add the last group
+    if (currentGroup.length > 0) {
+      filterGroups.push({
+        logic: currentLogic,
+        filters: currentGroup.map(f => ({ field: f.field, operator: f.operator, value: f.value }))
+      });
+    }
+  }
+  
+  return {
+    ...query,
+    filterGroups: filterGroups.length > 0 ? filterGroups : undefined,
+    advancedFilters: undefined // Remove from request
+  };
 }
 
 export async function fetchDatasets(): Promise<DatasetSummary[]> {

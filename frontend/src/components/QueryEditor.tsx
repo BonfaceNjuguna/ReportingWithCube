@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useDatasetSchema } from '../hooks/useDatasetSchema';
+import { MultiSelect } from './MultiSelect';
+import { AdvancedFilters } from './AdvancedFilters';
 import type { AnalyticsFilter, AnalyticsQuery, DatasetSchema, FilterOperator } from '../types/analytics';
 
 interface QueryEditorProps {
@@ -23,19 +25,110 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
     }
   }, [query.datasetId, refreshSchema, schema?.id]);
 
+  // Helper to get selected event types from filters
+  const getSelectedEventTypes = (): string[] => {
+    const filter = query.filters?.find(f => f.field === 'event_type');
+    if (!filter) return [];
+    if (typeof filter.value === 'string') {
+      return filter.value.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    if (Array.isArray(filter.value)) {
+      return filter.value.map(String);
+    }
+    return [];
+  };
+
+  const getSelectedStatuses = (): string[] => {
+    const filter = query.filters?.find(f => f.field === 'state_name');
+    if (!filter) return [];
+    if (typeof filter.value === 'string') {
+      return filter.value.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    if (Array.isArray(filter.value)) {
+      return filter.value.map(String);
+    }
+    return [];
+  };
+
   const summary = useMemo(() => getSummary(query, schema), [query, schema]);
   const previewPayload = useMemo(() => JSON.stringify(buildPayload(query, schema), null, 2), [query, schema]);
 
-  const availableFilters = schema?.filters ?? [];
-  const availableDimensions = schema?.dimensions ?? [];
-  const availableMeasures = schema?.measures ?? [];
+  const selectedEventTypes = useMemo(() => getSelectedEventTypes(), [query.filters]);
+
+  // Filter function to check if a field is applicable based on selected event types
+  const isApplicable = (applicableTypes: string[] | null | undefined): boolean => {
+    if (!applicableTypes || applicableTypes.length === 0) return true; // null/empty means all types
+    if (selectedEventTypes.length === 0) return true; // no filter selected, show all
+    // Show if any selected event type matches the applicable types
+    return selectedEventTypes.some(selected => applicableTypes.includes(selected));
+  };
+
+  const availableFilters = (schema?.filters ?? []).filter(f => isApplicable(f.applicableEventTypes));
+  const availableDimensions = (schema?.dimensions ?? []).filter(d => isApplicable(d.applicableEventTypes));
+  const availableMeasures = (schema?.measures ?? []).filter(m => isApplicable(m.applicableEventTypes));
 
   const toggleSelection = (value: string, key: 'kpis' | 'groupBy') => {
     setQuery((prev) => {
       const current = prev[key] ?? [];
       const exists = current.includes(value);
       const next = exists ? current.filter((item) => item !== value) : [...current, value];
-      return { ...prev, [key]: next };
+      const updated = { ...prev, [key]: next };
+      
+      // Auto-run query when selection changes
+      setTimeout(() => {
+        const payload = buildPayload(updated, schema);
+        onSubmit(payload);
+      }, 100);
+      
+      return updated;
+    });
+  };
+
+  const handleEventTypeChange = (selected: string[]) => {
+    setQuery((prev) => {
+      const filters = (prev.filters ?? []).filter(f => f.field !== 'event_type');
+      if (selected.length > 0) {
+        filters.push({
+          field: 'event_type',
+          operator: 'in',
+          value: selected.join(',')
+        });
+      }
+      const updated = { ...prev, filters };
+      
+      // Only auto-run query if KPIs are selected
+      if ((updated.kpis ?? []).length > 0) {
+        setTimeout(() => {
+          const payload = buildPayload(updated, schema);
+          onSubmit(payload);
+        }, 100);
+      }
+      
+      return updated;
+    });
+  };
+
+  const handleStatusChange = (selected: string[]) => {
+    setQuery((prev) => {
+      const filters = (prev.filters ?? []).filter(f => f.field !== 'state_name');
+      if (selected.length > 0) {
+        filters.push({
+          field: 'state_name',
+          operator: 'in',
+          value: selected.join(',')
+        });
+      }
+      const updated = { ...prev, filters };
+      
+      // Only auto-run query if KPIs are selected
+      if ((updated.kpis ?? []).length > 0) {
+        setTimeout(() => {
+          const payload = buildPayload(updated, schema);
+          onSubmit(payload);
+        }, 100);
+      }
+      
+      return updated;
     });
   };
 
@@ -84,9 +177,9 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
         <div>
           <p className="eyebrow">Analytics API</p>
           <h2 className="editor__title">Query builder</h2>
-          <p className="panel__subtitle">Pick your dataset, KPIs, and filters. We will send the exact payload to the backend.</p>
+          <p className="panel__subtitle">Select KPIs, dimensions, and filters. Changes update the report in real-time.</p>
         </div>
-        <span className="pill">{loading ? 'Running query…' : 'Ready'}</span>
+        <span className="pill">{loading ? 'Updating…' : 'Ready'}</span>
       </div>
 
       <div className="query-summary">
@@ -109,6 +202,51 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
         </div>
       </div>
 
+      {/* Quick Filters Section */}
+      <div className="quick-filters-section">
+        <div className="editor-section__header">
+          <div>
+            <p className="eyebrow">🔍 Quick Filters</p>
+            <p className="panel__title">Event Type & Status</p>
+          </div>
+        </div>
+        
+        <MultiSelect
+          label="Event Type"
+          options={['RFQ', 'RFI']}
+          value={getSelectedEventTypes()}
+          onChange={handleEventTypeChange}
+          placeholder="Select event types..."
+        />
+        
+        <MultiSelect
+          label="Status"
+          options={['InPreparation', 'Published', 'Ongoing', 'Closed', 'Completed', 'Cancelled', 'Awarded']}
+          value={getSelectedStatuses()}
+          onChange={handleStatusChange}
+          placeholder="Select statuses..."
+        />
+      </div>
+
+      {/* Advanced Filters with OR Support */}
+      <AdvancedFilters
+        filters={query.advancedFilters ?? []}
+        availableFilters={availableFilters}
+        onChange={(advancedFilters) => {
+          setQuery((prev) => {
+            const updated = { ...prev, advancedFilters };
+            // Auto-run query if KPIs are selected
+            if ((updated.kpis ?? []).length > 0) {
+              setTimeout(() => {
+                const payload = buildPayload(updated, schema);
+                onSubmit(payload);
+              }, 100);
+            }
+            return updated;
+          });
+        }}
+      />
+
       <div className="field">
         <span className="field__label">Dataset</span>
         <select
@@ -130,10 +268,10 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
         <div className="editor-section">
           <div className="editor-section__header">
             <div>
-              <p className="eyebrow">Groupings</p>
-              <p className="panel__title">Choose dimensions to group by</p>
+              <p className="eyebrow">Groupings (Dimensions)</p>
+              <p className="panel__title">Select columns to display</p>
             </div>
-            <span className="muted">{availableDimensions.length} fields</span>
+            <span className="muted">{availableDimensions.length} available • {query.groupBy?.length || 0} selected</span>
           </div>
           <div className="option-grid">
             {availableDimensions.map((dimension) => (
@@ -156,10 +294,10 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
         <div className="editor-section">
           <div className="editor-section__header">
             <div>
-              <p className="eyebrow">KPIs</p>
-              <p className="panel__title">Select measures to fetch</p>
+              <p className="eyebrow">KPIs (Measures)</p>
+              <p className="panel__title">Select metrics to calculate</p>
             </div>
-            <span className="muted">{availableMeasures.length} measures</span>
+            <span className="muted">{availableMeasures.length} available • {query.kpis.length} selected</span>
           </div>
           <div className="option-grid">
             {availableMeasures.map((measure) => (
@@ -186,61 +324,77 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
             <p className="eyebrow">Filters</p>
             <p className="panel__title">Refine the dataset</p>
           </div>
-          <button
-            type="button"
-            className="button button--ghost"
-            onClick={addFilter}
-            disabled={loading || !availableFilters.length}
-          >
-            Add filter
-          </button>
         </div>
 
         <div className="filter-list">
           {(query.filters ?? []).map((filter, index) => {
             const operators = availableFilters.find((f) => f.id === filter.field)?.operators ?? ['equals'];
             return (
-              <div className="filter-row" key={`${filter.field}-${index}`}>
-                <select
-                  className="field__input"
-                  value={filter.field}
-                  onChange={(event) => updateFilter(index, { field: event.target.value })}
-                  disabled={loading}
-                >
-                  {availableFilters.map((available) => (
-                    <option value={available.id} key={available.id}>
-                      {available.id}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  className="field__input"
-                  value={filter.operator}
-                  onChange={(event) => updateFilter(index, { operator: event.target.value as FilterOperator })}
-                  disabled={loading}
-                >
-                  {operators.map((operator) => (
-                    <option value={operator} key={operator}>
-                      {operator}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  className="field__input"
-                  type="text"
-                  placeholder="Value"
-                  value={String(filter.value ?? '')}
-                  onChange={(event) => updateFilter(index, { value: event.target.value })}
-                  disabled={loading}
-                />
-                <button className="button button--ghost" type="button" onClick={() => removeFilter(index)} disabled={loading}>
-                  Remove
-                </button>
+              <div className="filter-card" key={`${filter.field}-${index}`}>
+                <div className="filter-card__header">
+                  <span className="filter-card__title">Filter {index + 1}</span>
+                  <button className="button button--ghost button--small" type="button" onClick={() => removeFilter(index)} disabled={loading}>
+                    Remove
+                  </button>
+                </div>
+                <div className="filter-card__fields">
+                  <div className="field">
+                    <label className="field__label">Field</label>
+                    <select
+                      className="field__input"
+                      value={filter.field}
+                      onChange={(event) => updateFilter(index, { field: event.target.value })}
+                      disabled={loading}
+                    >
+                      {availableFilters.map((available) => (
+                        <option value={available.id} key={available.id}>
+                          {available.id}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label className="field__label">Operator</label>
+                    <select
+                      className="field__input"
+                      value={filter.operator}
+                      onChange={(event) => updateFilter(index, { operator: event.target.value as FilterOperator })}
+                      disabled={loading}
+                    >
+                      {operators.map((operator) => (
+                        <option value={operator} key={operator}>
+                          {operator}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label className="field__label">Value</label>
+                    <input
+                      className="field__input"
+                      type="text"
+                      placeholder="Enter value"
+                      value={String(filter.value ?? '')}
+                      onChange={(event) => updateFilter(index, { value: event.target.value })}
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
               </div>
             );
           })}
           {!query.filters?.length && <p className="muted">No filters yet. Add one to refine the request.</p>}
         </div>
+
+        <button
+          type="button"
+          className="button button--secondary"
+          onClick={addFilter}
+          disabled={loading || !availableFilters.length}
+          style={{ marginTop: '1rem' }}
+        >
+          + Add filter
+        </button>
       </div>
 
       <label className="field">
@@ -257,10 +411,10 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
 
       <div className="actions">
         <button className="button button--secondary" type="button" onClick={resetToDefault} disabled={loading}>
-          Reset to example
+          Reset to default
         </button>
         <button className="button" type="button" onClick={handleSubmit} disabled={loading || schemaLoading}>
-          {loading ? 'Running query…' : 'Run query'}
+          {loading ? 'Running query…' : 'Refresh query'}
         </button>
       </div>
     </div>
@@ -276,7 +430,15 @@ function buildPayload(query: AnalyticsQuery, schema?: DatasetSchema | null): Ana
       return { ...filter, value: normalizedValue } as AnalyticsFilter;
     });
 
-  return { ...query, filters };
+  const advancedFilters = (query.advancedFilters ?? [])
+    .filter((filter) => filter.field && filter.operator && filter.value)
+    .map((filter) => {
+      const schemaFilter = schema?.filters.find((item) => item.id === filter.field);
+      const normalizedValue = normalizeFilterValue(filter.value, filter.operator, schemaFilter?.type);
+      return { ...filter, value: normalizedValue } as AnalyticsFilter;
+    });
+
+  return { ...query, filters, advancedFilters };
 }
 
 function normalizeFilterValue(value: AnalyticsFilter['value'], operator: FilterOperator, type?: string) {
@@ -317,11 +479,15 @@ function coerceValue(value: string | number | boolean, type?: string): string | 
 
 function getSummary(query: Partial<AnalyticsQuery>, schema?: DatasetSchema | null) {
   const datasetLabel = schema?.label ?? '—';
+  const basicFilterCount = query.filters?.length ?? 0;
+  const advancedFilterCount = query.advancedFilters?.length ?? 0;
+  const totalFilterCount = basicFilterCount + advancedFilterCount;
+  
   return {
     dataset: query.datasetId ?? '—',
     datasetLabel,
     kpiCount: query.kpis?.length ?? 0,
     groupByCount: query.groupBy?.length ?? 0,
-    filterCount: query.filters?.length ?? 0,
+    filterCount: totalFilterCount,
   };
 }

@@ -178,3 +178,5 @@ example-queries/event-kpi-summary.json
 example-queries/event-list-detailed.json
 example-queries/test-rates.json
 example-queries/kpis.json
+example-queries/complex-and-or-combination.json
+example-queries/creator-or-filter.json

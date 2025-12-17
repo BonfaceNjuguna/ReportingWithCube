@@ -1,0 +1,114 @@
+.multi-select {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.multi-select__label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #2d3748;
+  margin-bottom: 0.5rem;
+}
+
+.multi-select__trigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px;
+}
+
+.multi-select__trigger:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.multi-select__value {
+  font-size: 0.875rem;
+  color: #4a5568;
+}
+
+.multi-select__arrow {
+  font-size: 0.75rem;
+  color: #a0aec0;
+  transition: transform 0.2s ease;
+}
+
+.multi-select__dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+  max-height: 300px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.multi-select__actions {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.multi-select__action-btn {
+  flex: 1;
+  padding: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: #4a5568;
+}
+
+.multi-select__action-btn:hover {
+  background: #f7fafc;
+  border-color: #a0aec0;
+}
+
+.multi-select__options {
+  overflow-y: auto;
+  max-height: 240px;
+}
+
+.multi-select__option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  font-size: 0.875rem;
+  color: #2d3748;
+}
+
+.multi-select__option:hover {
+  background: #f8fafc;
+}
+
+.multi-select__option input[type="checkbox"] {
+  width: 1.125rem;
+  height: 1.125rem;
+  cursor: pointer;
+}
+
+.multi-select__option span {
+  flex: 1;
+}

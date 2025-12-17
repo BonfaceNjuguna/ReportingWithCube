@@ -57,27 +57,30 @@ public partial class DatasetRegistry
                     Format = "number"
                 },
                 
-                // Financial measures
+                // Financial measures (RFQ only)
                 ["quotation_total_best"] = new()
                 {
                     CubeMember = "EventsView.quotationTotalBest",
                     Label = "Quotation Total (Best)",
                     Type = "number",
-                    Format = "currency"
+                    Format = "currency",
+                    ApplicableEventTypes = new[] { "RFQ" }
                 },
                 ["quotation_total_avg"] = new()
                 {
                     CubeMember = "EventsView.quotationTotalAvg",
                     Label = "Quotation Total (Average)",
                     Type = "number",
-                    Format = "currency"
+                    Format = "currency",
+                    ApplicableEventTypes = new[] { "RFQ" }
                 },
                 ["quotation_total"] = new()
                 {
                     CubeMember = "EventsView.quotationTotal",
                     Label = "Quotation Total",
                     Type = "number",
-                    Format = "currency"
+                    Format = "currency",
+                    ApplicableEventTypes = new[] { "RFQ" }
                 },
                 
                 // KPI measures - Time-based
@@ -183,16 +186,10 @@ public partial class DatasetRegistry
             Dimensions = new()
             {
                 // Event identification
-                ["event_id"] = new()
-                {
-                    CubeMember = "EventsView.id",
-                    Label = "Event ID",
-                    Type = "string"
-                },
                 ["event_number"] = new()
                 {
                     CubeMember = "EventsView.rfqNo",
-                    Label = "Event No. (RFQ No, RFI No, etc.)",
+                    Label = "Event No",
                     Type = "string"
                 },
                 ["event_name"] = new()
@@ -205,12 +202,6 @@ public partial class DatasetRegistry
                 {
                     CubeMember = "EventsView.eventType",
                     Label = "Event Type",
-                    Type = "string"
-                },
-                ["status"] = new()
-                {
-                    CubeMember = "EventsView.status",
-                    Label = "Status ID",
                     Type = "string"
                 },
                 ["state_name"] = new()
@@ -227,12 +218,6 @@ public partial class DatasetRegistry
                     Label = "Created By",
                     Type = "string"
                 },
-                ["creator_id"] = new()
-                {
-                    CubeMember = "EventsView.creatorId",
-                    Label = "Creator ID",
-                    Type = "string"
-                },
                 ["creator_department"] = new()
                 {
                     CubeMember = "EventsView.creatorDepartment",
@@ -243,7 +228,8 @@ public partial class DatasetRegistry
                 {
                     CubeMember = "EventsView.technicalContact",
                     Label = "Technical Contact",
-                    Type = "string"
+                    Type = "string",
+                    ApplicableEventTypes = new[] { "RFI" }
                 },
                 ["commercial_contact"] = new()
                 {
@@ -252,24 +238,27 @@ public partial class DatasetRegistry
                     Type = "string"
                 },
                 
-                // Organization fields
+                // Organization fields (RFQ only)
                 ["purchase_organisation"] = new()
                 {
                     CubeMember = "EventsView.purchaseOrganisation",
                     Label = "Purchase Organisation",
-                    Type = "string"
+                    Type = "string",
+                    ApplicableEventTypes = new[] { "RFQ" }
                 },
                 ["company_code"] = new()
                 {
                     CubeMember = "EventsView.companyCode",
                     Label = "Company Code",
-                    Type = "string"
+                    Type = "string",
+                    ApplicableEventTypes = new[] { "RFQ" }
                 },
                 ["purchase_group"] = new()
                 {
                     CubeMember = "EventsView.purchaseGroup",
                     Label = "Purchase Group",
-                    Type = "string"
+                    Type = "string",
+                    ApplicableEventTypes = new[] { "RFQ" }
                 },
                 
                 // Dates
@@ -317,84 +306,95 @@ public partial class DatasetRegistry
             {
                 ["event_type"] = new()
                 {
+                    Label = "Event Type",
                     Type = FilterType.String,
                     CubeMember = "EventsView.eventType",
                     AllowedOperators = ["equals", "notEquals", "in"]
                 },
                 ["created_by"] = new()
                 {
+                    Label = "Created By",
                     Type = FilterType.String,
                     CubeMember = "EventsView.creatorName",
                     AllowedOperators = ["equals", "contains", "in"]
                 },
                 ["creator_id"] = new()
                 {
+                    Label = "Creator ID",
                     Type = FilterType.String,
                     CubeMember = "EventsView.creatorId",
                     AllowedOperators = ["equals", "in"]
                 },
                 ["technical_contact"] = new()
                 {
+                    Label = "Technical Contact",
                     Type = FilterType.String,
                     CubeMember = "EventsView.technicalContact",
-                    AllowedOperators = ["equals", "contains", "in"]
+                    AllowedOperators = ["equals", "contains", "in"],
+                    ApplicableEventTypes = new[] { "RFI" }
                 },
                 ["commercial_contact"] = new()
                 {
+                    Label = "Commercial Contact",
                     Type = FilterType.String,
                     CubeMember = "EventsView.commercialContact",
                     AllowedOperators = ["equals", "contains", "in"]
                 },
                 ["purchase_organisation"] = new()
                 {
+                    Label = "Purchase Organisation",
                     Type = FilterType.String,
                     CubeMember = "EventsView.purchaseOrganisation",
-                    AllowedOperators = ["equals", "in"]
+                    AllowedOperators = ["equals", "in"],
+                    ApplicableEventTypes = new[] { "RFQ" }
                 },
                 ["company_code"] = new()
                 {
+                    Label = "Company Code",
                     Type = FilterType.String,
                     CubeMember = "EventsView.companyCode",
-                    AllowedOperators = ["equals", "in"]
+                    AllowedOperators = ["equals", "in"],
+                    ApplicableEventTypes = new[] { "RFQ" }
                 },
                 ["purchase_group"] = new()
                 {
+                    Label = "Purchase Group",
                     Type = FilterType.String,
                     CubeMember = "EventsView.purchaseGroup",
-                    AllowedOperators = ["equals", "in"]
+                    AllowedOperators = ["equals", "in"],
+                    ApplicableEventTypes = new[] { "RFQ" }
                 },
                 ["creator_department"] = new()
                 {
+                    Label = "Creator Department",
                     Type = FilterType.String,
                     CubeMember = "EventsView.creatorDepartment",
                     AllowedOperators = ["equals", "in", "contains"]
                 },
-                ["status"] = new()
-                {
-                    Type = FilterType.String,
-                    CubeMember = "EventsView.status",
-                    AllowedOperators = ["equals", "notEquals", "in"]
-                },
                 ["state_name"] = new()
                 {
+                    Label = "Status Name",
                     Type = FilterType.String,
                     CubeMember = "EventsView.stateName",
                     AllowedOperators = ["equals", "notEquals", "in", "contains"]
                 },
                 ["created_at"] = new()
                 {
+                    Label = "Created At",
                     Type = FilterType.Time,
                     CubeMember = "EventsView.createdAt",
                     AllowedOperators = ["inDateRange", "afterDate", "beforeDate"]
                 },
                 ["started_at"] = new()
                 {
+                    Label = "Started At",
                     Type = FilterType.Time,
                     CubeMember = "EventsView.startedDate",
                     AllowedOperators = ["inDateRange", "afterDate", "beforeDate"]
                 },
                 ["deadline"] = new()
                 {
+                    Label = "Submission Deadline",
                     Type = FilterType.Time,
                     CubeMember = "EventsView.submissionDeadline",
                     AllowedOperators = ["inDateRange", "afterDate", "beforeDate"]
@@ -545,18 +545,21 @@ public partial class DatasetRegistry
             {
                 ["supplier_name"] = new()
                 {
+                    Label = "Supplier Name",
                     Type = FilterType.String,
                     CubeMember = "RfqSuppliers.supplierName",
                     AllowedOperators = ["equals", "contains", "in"]
                 },
                 ["supplier_status"] = new()
                 {
+                    Label = "Supplier Status",
                     Type = FilterType.String,
                     CubeMember = "RfqSuppliers.status",
                     AllowedOperators = ["equals", "in"]
                 },
                 ["created_at"] = new()
                 {
+                    Label = "Created At",
                     Type = FilterType.Time,
                     CubeMember = "RfqSuppliers.createdAt",
                     AllowedOperators = ["inDateRange", "afterDate", "beforeDate"]
@@ -647,12 +650,14 @@ public partial class DatasetRegistry
             {
                 ["material_no"] = new()
                 {
+                    Label = "Material Number",
                     Type = FilterType.String,
                     CubeMember = "Items.materialNo",
                     AllowedOperators = ["equals", "contains", "in"]
                 },
                 ["material_group"] = new()
                 {
+                    Label = "Material Group",
                     Type = FilterType.String,
                     CubeMember = "Items.materialGroup",
                     AllowedOperators = ["equals", "in"]
