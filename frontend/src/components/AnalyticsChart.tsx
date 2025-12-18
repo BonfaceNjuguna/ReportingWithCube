@@ -57,7 +57,6 @@ export function AnalyticsChart({
   const [chartType, setChartType] = useState<ChartType | null>(null);
   const [showTopN, setShowTopN] = useState(true);
 
-  // Smart chart type detection
   const recommendedChartType = useMemo((): ChartType => {
     const hasTimeDimension = query.groupBy?.some(dim => 
       dim.includes('created_at') || dim.includes('deadline') || dim.includes('date')
@@ -71,10 +70,8 @@ export function AnalyticsChart({
     return 'bar';
   }, [query]);
 
-  // Use recommended chart type if none selected
   const activeChartType = chartType ?? recommendedChartType;
 
-  // Helper function for field matching
   const createFieldMatcher = () => {
     const fieldMapping: Record<string, string[]> = {
       'event_number': ['rfqno', 'number', 'eventno'],
@@ -100,13 +97,11 @@ export function AnalyticsChart({
 
   const matchesField = createFieldMatcher();
 
-  // Aggregate and transform data for charts
   const { chartData, aggregatedData } = useMemo(() => {
     if (!tableData.rows.length || !tableData.headers.length) {
       return { chartData: [], aggregatedData: new Map() };
     }
 
-    // Find dimension and KPI columns
     const dimensionHeader = tableData.headers.find(h => 
       query.groupBy?.some(dim => matchesField(h.key, dim))
     );
@@ -121,7 +116,6 @@ export function AnalyticsChart({
 
     // Aggregate data by dimension
     const aggregated = new Map<string, Record<string, number>>();
-    
     tableData.rows.forEach(row => {
       const dimValue = String(row[dimensionHeader.key] || 'Unknown');
       
@@ -137,12 +131,10 @@ export function AnalyticsChart({
           ? value 
           : parseFloat(String(value)) || 0;
         
-        // Sum values for aggregation
         existing[kpiHeader.label] = (existing[kpiHeader.label] || 0) + numValue;
       });
     });
 
-    // Convert to array and sort by first KPI descending
     let dataArray = Array.from(aggregated.entries()).map(([name, values]) => ({
       name,
       ...values,
@@ -155,13 +147,11 @@ export function AnalyticsChart({
       dataArray.sort((a, b) => (b[firstKpiLabel] || 0) - (a[firstKpiLabel] || 0));
     }
 
-    // Apply Top N filtering if enabled
     let finalData = dataArray;
     if (showTopN && dataArray.length > TOP_N_LIMIT) {
       const topN = dataArray.slice(0, TOP_N_LIMIT);
       const others = dataArray.slice(TOP_N_LIMIT);
       
-      // Aggregate "Others"
       const othersAggregated: any = { name: 'Others (Aggregated)' };
       kpiHeaders.forEach(kpiHeader => {
         othersAggregated[kpiHeader.label] = others.reduce(

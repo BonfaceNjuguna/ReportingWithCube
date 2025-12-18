@@ -14,7 +14,6 @@ public class ReportingDbContext : DbContext
     {
     }
     
-    // Saved reports and dashboards
     public DbSet<SavedReportDefinition> SavedReports { get; set; }
     public DbSet<DashboardDefinition> Dashboards { get; set; }
 
@@ -22,7 +21,6 @@ public class ReportingDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // SavedReportDefinition configuration
         modelBuilder.Entity<SavedReportDefinition>(entity =>
         {
             entity.ToTable("SavedReports");
@@ -42,7 +40,6 @@ public class ReportingDbContext : DbContext
             entity.HasIndex(e => e.ObjectType);
         });
 
-        // DashboardDefinition configuration
         modelBuilder.Entity<DashboardDefinition>(entity =>
         {
             entity.ToTable("Dashboards");

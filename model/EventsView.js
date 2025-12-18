@@ -1,6 +1,3 @@
-// Comprehensive Events View - UNION of all event types (RFQ, RFI, RFP, etc.)
-// This combines material_rfq, request_for_information, and future event types
-
 cube(`EventsView`, {
   sql: `
     SELECT
@@ -112,7 +109,6 @@ cube(`EventsView`, {
   },
 
   joins: {
-    // Join to state tables to get state names
     StateMaterialRfq: {
       sql: `${CUBE}.current_state_id = ${StateMaterialRfq}.id AND ${CUBE}.event_type = 'RFQ'`,
       relationship: `belongsTo`
@@ -122,7 +118,6 @@ cube(`EventsView`, {
       relationship: `belongsTo`
     },
     
-    // Join to appropriate supplier table based on event_type
     RequestForToSupplierMaterialRfq: {
       sql: `${CUBE}.id = ${RequestForToSupplierMaterialRfq}.parent_id AND ${CUBE}.event_type = 'RFQ'`,
       relationship: `hasMany`
@@ -132,13 +127,11 @@ cube(`EventsView`, {
       relationship: `hasMany`
     },
     
-    // Join to supplier state tables
     StateRequestForToSupplierMaterialRfq: {
       sql: `${RequestForToSupplierMaterialRfq}.current_state_id = ${StateRequestForToSupplierMaterialRfq}.id`,
       relationship: `belongsTo`
     },
     
-    // Join to User table for creator department
     User: {
       sql: `${CUBE}.created_by_user_id::uuid = ${User}.id`,
       relationship: `belongsTo`
@@ -159,7 +152,6 @@ cube(`EventsView`, {
   },
 
   measures: {
-    // ===== COUNT MEASURES =====
     count: {
       type: `count`,
       drillMembers: [number, name, eventType, createdAt, createdBy]
@@ -263,8 +255,6 @@ cube(`EventsView`, {
       title: `Number of Suppliers (Rejected)`
     },
     
-    // ===== KPI MEASURES - TIME-BASED =====
-
     offerPeriodDays: {
       sql: `
             CASE 
@@ -316,8 +306,6 @@ cube(`EventsView`, {
       description: `Average time from event start to award decision`
     },
     
-    // ===== KPI MEASURES - RATES =====
-
     quotationRate: {
       sql: `
         CASE 
@@ -465,9 +453,6 @@ cube(`EventsView`, {
       description: `Number of rejected suppliers / Number of invited suppliers * 100`
     },
     
-    // ===== QUOTATION MEASURES =====
-    
-    // Best (lowest) quotation total price - latest round, opened quotations, exclude quotations with invalid items (unit_price <= 0, item_type != 3)
     bestQuotationTotal: {
       sql: `
         (
@@ -574,8 +559,6 @@ cube(`EventsView`, {
       title: `Last Round Number`
     },
     
-    // ===== SUPPLIER STATE COUNTS =====
-
     suppliersInProcessCount: {
       sql: `
         (
@@ -632,7 +615,6 @@ cube(`EventsView`, {
       primaryKey: true
     },
     
-    // Event type dimension (RFQ, RFI, RFP, eAuction)
     eventType: {
       sql: `event_type`,
       type: `string`,
@@ -645,7 +627,6 @@ cube(`EventsView`, {
       title: `Event Number`
     },
     
-    // Alias for backward compatibility
     rfqNo: {
       sql: `"event_number"`,
       type: `string`,
@@ -658,7 +639,6 @@ cube(`EventsView`, {
       title: `Event Name`
     },
     
-    // Alias for backward compatibility
     rfqName: {
       sql: `name`,
       type: `string`,
@@ -676,7 +656,6 @@ cube(`EventsView`, {
       title: `Status ID`
     },
     
-    // State name from joined state tables
     stateName: {
       sql: `
         CASE 
@@ -687,14 +666,12 @@ cube(`EventsView`, {
       title: `Status Name`
     },
     
-    // Alias for backend compatibility
     status: {
       sql: `current_state_id`,
       type: `string`,
       title: `Status`
     },
     
-    // Organization fields (RFQ only)
     purchaseOrganisation: {
       sql: `purchase_organisation`,
       type: `string`,
@@ -713,7 +690,6 @@ cube(`EventsView`, {
       title: `Purchase Group`
     },
     
-    // Contact fields
     commercialContact: {
       sql: `commercial_contact`,
       type: `string`,
@@ -726,7 +702,6 @@ cube(`EventsView`, {
       title: `Technical Contact`
     },
     
-    // Creator fields
     createdBy: {
       sql: `created_by`,
       type: `string`,
@@ -745,7 +720,6 @@ cube(`EventsView`, {
       title: `Department (Creator)`
     },
     
-    // Aliases for backend compatibility
     creatorName: {
       sql: `created_by`,
       type: `string`,
@@ -780,7 +754,6 @@ cube(`EventsView`, {
       title: `Number of Rounds`
     },
     
-    // Alias for backend compatibility
     numberOfRounds: {
       sql: `round_number`,
       type: `number`,
@@ -792,7 +765,6 @@ cube(`EventsView`, {
       type: `string`
     },
     
-    // Dates
     createdAt: {
       sql: `created_at`,
       type: `time`,
@@ -810,7 +782,6 @@ cube(`EventsView`, {
       title: `Started/Published At`
     },
     
-    // Alias for backend compatibility
     startedAt: {
       sql: `started_date`,
       type: `time`,
@@ -823,7 +794,6 @@ cube(`EventsView`, {
       title: `Submission Deadline`
     },
     
-    // Alias for backend compatibility
     submissionDeadline: {
       sql: `deadline`,
       type: `time`,
@@ -841,7 +811,6 @@ cube(`EventsView`, {
       type: `string`
     },
     
-    // Boolean flags
     isInEditMode: {
       sql: `is_in_edit_mode`,
       type: `boolean`
@@ -856,9 +825,6 @@ cube(`EventsView`, {
       sql: `has_deadline_changed`,
       type: `boolean`
     },
-    
-    // All dimensions from MaterialRfq are inherited via extends
-    // Adding additional computed dimensions if needed
     
     hasOrders: {
       sql: `EXISTS(

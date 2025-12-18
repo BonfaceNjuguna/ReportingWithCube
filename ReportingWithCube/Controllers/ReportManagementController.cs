@@ -26,11 +26,8 @@ public class ReportManagementController : ControllerBase
         _logger = logger;
     }
 
-    // ===== SAVED REPORTS =====
-
     /// <summary>
     /// Get all saved reports for current user
-    /// GET /api/analytics/v1/reports
     /// </summary>
     [HttpGet("reports")]
     public async Task<ActionResult<IEnumerable<SavedReportDefinition>>> GetSavedReports()
@@ -42,7 +39,6 @@ public class ReportManagementController : ControllerBase
 
     /// <summary>
     /// Get a specific saved report
-    /// GET /api/analytics/v1/reports/{id}
     /// </summary>
     [HttpGet("reports/{id}")]
     public async Task<ActionResult<SavedReportDefinition>> GetSavedReport(int id)
@@ -60,8 +56,6 @@ public class ReportManagementController : ControllerBase
 
     /// <summary>
     /// Create a new saved report
-    /// POST /api/analytics/v1/reports
-    /// Example: Save "RFQ Jan by MÖCHEL" with filters and column selection
     /// </summary>
     [HttpPost("reports")]
     public async Task<ActionResult<SavedReportDefinition>> CreateSavedReport([FromBody] SavedReportDefinition report)
@@ -81,7 +75,6 @@ public class ReportManagementController : ControllerBase
 
     /// <summary>
     /// Update a saved report
-    /// PUT /api/analytics/v1/reports/{id}
     /// </summary>
     [HttpPut("reports/{id}")]
     public async Task<ActionResult<SavedReportDefinition>> UpdateSavedReport(int id, [FromBody] SavedReportDefinition report)
@@ -106,7 +99,6 @@ public class ReportManagementController : ControllerBase
 
     /// <summary>
     /// Delete a saved report
-    /// DELETE /api/analytics/v1/reports/{id}
     /// </summary>
     [HttpDelete("reports/{id}")]
     public async Task<ActionResult> DeleteSavedReport(int id)
@@ -124,11 +116,8 @@ public class ReportManagementController : ControllerBase
         }
     }
 
-    // ===== DASHBOARDS =====
-
     /// <summary>
     /// Get all dashboards for current user
-    /// GET /api/analytics/v1/dashboards
     /// </summary>
     [HttpGet("dashboards")]
     public async Task<ActionResult<IEnumerable<DashboardDefinition>>> GetDashboards()
@@ -140,7 +129,6 @@ public class ReportManagementController : ControllerBase
 
     /// <summary>
     /// Get a specific dashboard
-    /// GET /api/analytics/v1/dashboards/{id}
     /// </summary>
     [HttpGet("dashboards/{id}")]
     public async Task<ActionResult<DashboardDefinition>> GetDashboard(int id)
@@ -158,7 +146,6 @@ public class ReportManagementController : ControllerBase
 
     /// <summary>
     /// Create a new dashboard
-    /// POST /api/analytics/v1/dashboards
     /// </summary>
     [HttpPost("dashboards")]
     public async Task<ActionResult<DashboardDefinition>> CreateDashboard([FromBody] DashboardDefinition dashboard)
@@ -178,7 +165,6 @@ public class ReportManagementController : ControllerBase
 
     /// <summary>
     /// Update a dashboard
-    /// PUT /api/analytics/v1/dashboards/{id}
     /// </summary>
     [HttpPut("dashboards/{id}")]
     public async Task<ActionResult<DashboardDefinition>> UpdateDashboard(int id, [FromBody] DashboardDefinition dashboard)
@@ -203,7 +189,6 @@ public class ReportManagementController : ControllerBase
 
     /// <summary>
     /// Delete a dashboard
-    /// DELETE /api/analytics/v1/dashboards/{id}
     /// </summary>
     [HttpDelete("dashboards/{id}")]
     public async Task<ActionResult> DeleteDashboard(int id)

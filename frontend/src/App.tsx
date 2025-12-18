@@ -157,7 +157,6 @@ function App() {
   };
 
   const handleDrillDown = (field: string, value: string) => {
-    // Add filter for drill-down
     const newFilter = {
       field,
       operator: 'equals' as const,
@@ -182,7 +181,6 @@ function App() {
   const handleDrillUp = () => {
     if (drillDownPath.length === 0) return;
     
-    // Remove the last drill-down filter
     const newPath = drillDownPath.slice(0, -1);
     const updatedQuery = {
       ...currentQuery,
@@ -573,27 +571,21 @@ function ResultTable({ table, loading, error, currentPage, pageSize, totalRows, 
 function renderCell(value: unknown, key?: string) {
   if (value === null || value === undefined) return '—';
   if (typeof value === 'number') {
-    // Format time-based KPIs (days) as integers - MUST CHECK FIRST
     if (key && (key.includes('cycle_time') || key.includes('offer_period') || key.toLowerCase().includes('_days'))) {
       return Math.round(value).toLocaleString() + ' days';
     }
-    // Format percentages - CHECK BEFORE currency
     if (key && (key.includes('rate') || key.includes('percent'))) {
       return value.toFixed(1) + '%';
     }
-    // Format currency values
     if (key && (key.includes('total') || key.includes('price') || key.includes('volume'))) {
       return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(value);
     }
-    // Format count values
     if (key && key.includes('count')) {
       return Math.round(value).toLocaleString();
     }
-    // Default number formatting
     return value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   }
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-  // Format dates
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
     try {
       const date = new Date(value);

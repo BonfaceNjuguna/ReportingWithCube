@@ -5,8 +5,7 @@ using ReportingWithCube.Analytics.Semantic;
 namespace ReportingWithCube.Analytics.Translation;
 
 /// <summary>
-/// Translates UI intent (business language) to Cube.js queries (technical)
-/// This is the core translation layer
+/// Translates UI queries to Cube.js queries
 /// </summary>
 public interface IAnalyticsQueryBuilder
 {
@@ -105,7 +104,6 @@ public class AnalyticsQueryBuilder : IAnalyticsQueryBuilder
     {
         var filters = new List<CubeFilter>();
 
-        // Translate UI filters (simple AND logic)
         foreach (var uiFilter in uiFilters.Where(f => !IsTimeDimension(f, dataset)))
         {
             if (dataset.Filters.TryGetValue(uiFilter.Field, out var filterDef))
@@ -119,7 +117,6 @@ public class AnalyticsQueryBuilder : IAnalyticsQueryBuilder
             }
         }
 
-        // 🔐 SECURITY: Inject mandatory filters (tenant, user, etc.)
         if (dataset.Security != null && user != null)
         {
             InjectSecurityFilters(filters, dataset, user);
@@ -167,7 +164,6 @@ public class AnalyticsQueryBuilder : IAnalyticsQueryBuilder
 
     private void InjectSecurityFilters(List<CubeFilter> filters, DatasetDefinition dataset, ClaimsPrincipal user)
     {
-        // Tenant-level security
         if (!string.IsNullOrEmpty(dataset.Security!.TenantFilterMember))
         {
             var tenantId = GetTenantId(user);
@@ -184,7 +180,6 @@ public class AnalyticsQueryBuilder : IAnalyticsQueryBuilder
             }
         }
 
-        // User-level security
         if (!string.IsNullOrEmpty(dataset.Security!.UserFilterMember))
         {
             var userId = GetUserId(user);
@@ -206,7 +201,6 @@ public class AnalyticsQueryBuilder : IAnalyticsQueryBuilder
     {
         if (sort == null) return null;
 
-        // Check if it's a measure
         if (dataset.Measures.TryGetValue(sort.By, out var measure))
         {
             return new Dictionary<string, string>
@@ -215,7 +209,6 @@ public class AnalyticsQueryBuilder : IAnalyticsQueryBuilder
             };
         }
 
-        // Check if it's a dimension
         if (dataset.Dimensions.TryGetValue(sort.By, out var dimension))
         {
             return new Dictionary<string, string>
@@ -241,16 +234,13 @@ public class AnalyticsQueryBuilder : IAnalyticsQueryBuilder
 
     private object TranslateDateRange(object value)
     {
-        // Handle common date range formats
         if (value is string strValue)
         {
-            // "last 90 days", "last 6 months", etc.
             if (strValue.StartsWith("last", StringComparison.OrdinalIgnoreCase))
             {
                 return strValue;
             }
             
-            // "2024-01-01,2024-12-31" or array
             if (strValue.Contains(','))
             {
                 return strValue.Split(',');
@@ -288,7 +278,6 @@ public class AnalyticsQueryBuilder : IAnalyticsQueryBuilder
         if (value is IEnumerable<string> enumerable)
             return enumerable.ToArray();
         
-        // Handle JsonElement from deserialization
         if (value is System.Text.Json.JsonElement jsonElement)
         {
             if (jsonElement.ValueKind == System.Text.Json.JsonValueKind.Array)
