@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using ReportingWithCube.Analytics.Models;
 using ReportingWithCube.Analytics.Semantic;
-using ReportingWithCube.Analytics.Translation;
 
 namespace ReportingWithCube.Analytics.Validation;
 
