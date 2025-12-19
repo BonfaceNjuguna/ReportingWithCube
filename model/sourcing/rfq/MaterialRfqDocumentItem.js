@@ -1,8 +1,8 @@
 // Cube.js schema for Material RFQ Document Items
-// Maps to: public.material_rfq_document_item
+// Maps to: buyer_d_fdw_rfq_service.material_rfq_document_item
 
 cube(`MaterialRfqDocumentItem`, {
-  sql: `SELECT * FROM public.material_rfq_document_item`,
+  sql: `SELECT * FROM buyer_d_fdw_rfq_service.material_rfq_document_item`,
   
   preAggregations: {
     byMaterial: {

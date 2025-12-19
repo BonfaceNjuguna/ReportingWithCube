@@ -10,7 +10,6 @@ namespace ReportingWithCube.Controllers;
 
 /// <summary>
 /// Analytics API - Generic query endpoint with translation layer
-/// Follows recommended pattern: UI intent → Translation → Cube.js
 /// </summary>
 [ApiController]
 [Route("api/analytics/v1")]
@@ -38,7 +37,6 @@ public class AnalyticsController : ControllerBase
 
     /// <summary>
     /// Execute an analytics query (main endpoint)
-    /// POST /api/analytics/v1/query
     /// </summary>
     [HttpPost("query")]
     public async Task<ActionResult<AnalyticsQueryResponse>> ExecuteQuery([FromBody] UiQueryRequest request)
@@ -49,23 +47,15 @@ public class AnalyticsController : ControllerBase
         {
             _logger.LogInformation("Analytics query for dataset: {Dataset}", request.DatasetId);
 
-            // 1. Get dataset definition (semantic model)
             var dataset = _datasetRegistry.GetDataset(request.DatasetId);
             if (dataset == null)
             {
                 return NotFound(new { error = $"Dataset '{request.DatasetId}' not found" });
             }
 
-            // 2. Validate request (security, allowlist, limits)
             _validator.Validate(request, dataset, User);
-
-            // 3. Translate UI intent → Cube.js query (THE TRANSLATION LAYER)
             var cubeQuery = _queryBuilder.Build(request, dataset, User);
-
-            // 4. Execute query via Cube.js
             var cubeResult = await _cubeService.ExecuteQueryAsync(cubeQuery);
-
-            // 5. Build response
             var response = BuildResponse(cubeResult, dataset, stopwatch.ElapsedMilliseconds);
 
             return Ok(response);
@@ -84,7 +74,6 @@ public class AnalyticsController : ControllerBase
 
     /// <summary>
     /// Get schema metadata for a dataset (for building UI)
-    /// GET /api/analytics/v1/schema/{datasetId}
     /// </summary>
     [HttpGet("schema/{datasetId}")]
     public ActionResult GetSchema(string datasetId)
@@ -133,7 +122,6 @@ public class AnalyticsController : ControllerBase
 
     /// <summary>
     /// Get all available datasets
-    /// GET /api/analytics/v1/datasets
     /// </summary>
     [HttpGet("datasets")]
     public ActionResult GetDatasets()
@@ -158,7 +146,6 @@ public class AnalyticsController : ControllerBase
 
     /// <summary>
     /// Get Cube.js metadata (raw, for advanced use)
-    /// GET /api/analytics/v1/meta
     /// </summary>
     [HttpGet("meta")]
     public async Task<ActionResult> GetCubeMeta()
@@ -240,7 +227,6 @@ public class AnalyticsController : ControllerBase
 
     private (string label, string type) GetFriendlyMetadata(string cubeMember, DatasetDefinition dataset)
     {
-        // Check measures
         foreach (var measure in dataset.Measures)
         {
             if (measure.Value.CubeMember == cubeMember)
@@ -249,7 +235,6 @@ public class AnalyticsController : ControllerBase
             }
         }
 
-        // Check dimensions
         foreach (var dimension in dataset.Dimensions)
         {
             if (dimension.Value.CubeMember == cubeMember)

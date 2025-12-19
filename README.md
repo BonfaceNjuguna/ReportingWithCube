@@ -9,8 +9,6 @@
 ✅ **Responsive Design** - Full-page layout with sticky sidebar  
 ✅ **Empty State UX** - Clean messaging when no data is selected  
 
-📖 **See [ADVANCED-FILTERS-GUIDE.md](ADVANCED-FILTERS-GUIDE.md) for filtering examples**
-
 ## Architecture Overview
 
 ```
@@ -227,56 +225,6 @@ ExportController.ExportToExcel()
 Return file download
 ```
 
-## Database Schema
-
-### RfqEvents Table
-```sql
-CREATE TABLE RfqEvents (
-    Id UNIQUEIDENTIFIER PRIMARY KEY,
-    RfqNo NVARCHAR(50) NOT NULL UNIQUE,
-    RfqName NVARCHAR(200) NOT NULL,
-    CreatedAt DATETIME2 NOT NULL,
-    SubmissionDeadline DATETIME2 NOT NULL,
-    Status NVARCHAR(50),
-    CreatorId NVARCHAR(100),
-    CreatorName NVARCHAR(200),
-    NumberOfInvitedSuppliers INT,
-    NumberOfOfferedSuppliers INT,
-    QuotationTotal DECIMAL(18,2)
-)
-```
-
-### RfqSuppliers Table
-```sql
-CREATE TABLE RfqSuppliers (
-    Id UNIQUEIDENTIFIER PRIMARY KEY,
-    RfqEventId UNIQUEIDENTIFIER NOT NULL,
-    SupplierId NVARCHAR(100) NOT NULL,
-    SupplierName NVARCHAR(200) NOT NULL,
-    IsInvited BIT,
-    HasSubmitted BIT,
-    SubmittedAt DATETIME2,
-    QuotationAmount DECIMAL(18,2),
-    Status NVARCHAR(50),
-    FOREIGN KEY (RfqEventId) REFERENCES RfqEvents(Id)
-)
-```
-
-### SavedReports Table
-```sql
-CREATE TABLE SavedReports (
-    Id UNIQUEIDENTIFIER PRIMARY KEY,
-    Name NVARCHAR(200) NOT NULL,
-    UserId NVARCHAR(100) NOT NULL,
-    ReportType NVARCHAR(50),
-    FilterJson NVARCHAR(MAX),
-    ColumnsJson NVARCHAR(MAX),
-    ChartConfigJson NVARCHAR(MAX),
-    CreatedAt DATETIME2,
-    UpdatedAt DATETIME2
-)
-```
-
 ## Cube.js Schema Definition
 
 The Cube.js schema defines how data is queried and aggregated. Key files:
@@ -319,23 +267,13 @@ cd ReportingWithCube
 dotnet restore
 ```
 
-### 2. Configure Database Connection
-Edit `appsettings.json`:
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=ReportingDb;Trusted_Connection=True;"
-  }
-}
-```
-
-### 3. Create Database Migration
+### 2. Create Database Migration
 ```powershell
 dotnet ef migrations add InitialCreate
 dotnet ef database update
 ```
 
-### 4. Configure Cube.js
+### 3. Configure Cube.js
 Edit `appsettings.json`:
 ```json
 {
@@ -346,7 +284,7 @@ Edit `appsettings.json`:
 }
 ```
 
-### 5. Setup Cube.js Server
+### 4. Setup Cube.js Server
 ```bash
 # In a separate directory for Cube.js
 npx cubejs-cli create reporting-cube -d postgres
@@ -366,52 +304,8 @@ CUBEJS_DB_PASS=your-password
 npm run dev
 ```
 
-### 6. Run the Application
+### 5. Run the Application
 ```powershell
 cd ReportingWithCube
 dotnet run
-```
-
-## Next Steps
-
-1. **Add Authentication** - Integrate with your auth system
-2. **Add Excel Library** - Install EPPlus or ClosedXML for proper Excel export
-3. **Add More Filters** - Status, RFQ numbers, custom date ranges
-4. **Add More Charts** - Cycle time trends, supplier participation rates
-5. **Add Caching** - Implement Redis for frequently accessed reports
-6. **Add Real-time Updates** - Use SignalR for live report updates
-
-## Example Usage
-
-### Frontend React Code Example
-```typescript
-// Generate Report
-const response = await fetch('/api/reports/generate', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    filters: {
-      creatorId: 'USER123',
-      startDate: '2024-01-01',
-      endDate: '2024-01-31'
-    },
-    columns: {
-      rfqNo: true,
-      rfqName: true,
-      createdAt: true,
-      submissionDeadline: true,
-      status: true,
-      numberOfInvitedSuppliers: true,
-      numberOfOfferedSuppliers: true,
-      quotationTotal: true
-    },
-    includeKpis: true,
-    includeCharts: true
-  })
-});
-
-const report = await response.json();
-// report.data - table rows
-// report.kpis - KPI metrics
-// report.charts - chart data
 ```

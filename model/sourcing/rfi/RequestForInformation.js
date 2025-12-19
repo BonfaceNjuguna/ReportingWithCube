@@ -1,8 +1,8 @@
 // Cube.js schema for Request for Information (RFI)
-// Maps to: public.request_for_information
+// Maps to: buyer_d_fdw_rfq_service.request_for_information
 
 cube(`RequestForInformation`, {
-  sql: `SELECT * FROM public.request_for_information`,
+  sql: `SELECT * FROM buyer_d_fdw_rfq_service.request_for_information`,
   
   preAggregations: {
     main: {

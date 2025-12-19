@@ -26,7 +26,6 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
     }
   }, [query.datasetId, refreshSchema, schema?.id]);
 
-  // Helper to get selected event types from filters
   const getSelectedEventTypes = (): string[] => {
     const filter = query.filters?.find(f => f.field === 'event_type');
     if (!filter) return [];
@@ -56,11 +55,9 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
 
   const selectedEventTypes = useMemo(() => getSelectedEventTypes(), [query.filters]);
 
-  // Filter function to check if a field is applicable based on selected event types
   const isApplicable = (applicableTypes: string[] | null | undefined): boolean => {
-    if (!applicableTypes || applicableTypes.length === 0) return true; // null/empty means all types
-    if (selectedEventTypes.length === 0) return true; // no filter selected, show all
-    // Show if any selected event type matches the applicable types
+    if (!applicableTypes || applicableTypes.length === 0) return true;
+    if (selectedEventTypes.length === 0) return true;
     return selectedEventTypes.some(selected => applicableTypes.includes(selected));
   };
 
@@ -108,7 +105,6 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
     setQuery((prev) => {
       const filters = (prev.filters ?? []).filter(f => f.field !== selectedDateField);
       
-      // Get existing values
       const existingFilter = (prev.filters ?? []).find(f => f.field === selectedDateField && f.operator === 'inDateRange');
       let fromDate = '';
       let toDate = '';
@@ -119,14 +115,12 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
         toDate = dates[1] || '';
       }
       
-      // Update the changed value
       if (type === 'from') {
         fromDate = value;
       } else {
         toDate = value;
       }
       
-      // Only add filter if at least one date is set
       if (fromDate || toDate) {
         filters.push({
           field: selectedDateField,

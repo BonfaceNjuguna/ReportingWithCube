@@ -86,7 +86,6 @@ public class AnalyticsQueryValidator : IAnalyticsQueryValidator
                     $"Allowed operators: {string.Join(", ", filterDef.AllowedOperators)}");
             }
 
-            // Validate date range limits for time filters
             if (filterDef.Type == FilterType.Time && dataset.Security != null)
             {
                 ValidateDateRange(filter, dataset.Security.MaxDateRangeDays);

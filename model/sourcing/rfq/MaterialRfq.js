@@ -1,8 +1,8 @@
 // Cube.js schema for Material RFQ (main events table)
-// Maps to: public.material_rfq
+// Maps to: buyer_d_fdw_rfq_service.material_rfq
 
 cube(`MaterialRfq`, {
-  sql: `SELECT * FROM public.material_rfq`,
+  sql: `SELECT * FROM buyer_d_fdw_rfq_service.material_rfq`,
   
   preAggregations: {
     main: {
