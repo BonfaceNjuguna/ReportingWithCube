@@ -31,7 +31,7 @@ public class EventDatasetBuilder : IDatasetBuilder
                 TenantFilterMember = "EventsView.tenant",
                 UserFilterMember = "EventsView.createdBy",
                 MaxLimit = 1000,
-                MaxDateRangeDays = 365
+                MaxDateRangeDays = 730
             }
         };
     }

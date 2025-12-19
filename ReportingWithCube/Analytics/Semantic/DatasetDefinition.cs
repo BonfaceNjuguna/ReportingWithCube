@@ -27,7 +27,7 @@ public record DimensionDefinition
     public string CubeMember { get; init; } = string.Empty;
     public string Label { get; init; } = string.Empty;
     public string Type { get; init; } = "string";
-    public string[]? ApplicableEventTypes { get; init; } = null; // null means all types
+    public string[]? ApplicableEventTypes { get; init; } = null;
 }
 
 public record FilterDefinition
@@ -36,7 +36,7 @@ public record FilterDefinition
     public string Label { get; init; } = string.Empty;
     public FilterType Type { get; init; }
     public string[] AllowedOperators { get; init; } = Array.Empty<string>();
-    public string[]? ApplicableEventTypes { get; init; } = null; // null means all types
+    public string[]? ApplicableEventTypes { get; init; } = null;
 }
 
 public record SecurityPolicy

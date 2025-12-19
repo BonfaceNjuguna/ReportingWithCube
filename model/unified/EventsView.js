@@ -37,8 +37,8 @@ cube(`EventsView`, {
           -- Standardized Supplier Counts
           (SELECT COUNT(DISTINCT rfts.id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq rfts WHERE rfts.parent_id = material_rfq.id) as invited_suppliers_count,
           (SELECT COUNT(DISTINCT rfts.id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq rfts WHERE rfts.parent_id = material_rfq.id AND rfts.has_active_status_changed = true) as viewed_suppliers_count,
-          (SELECT COUNT(DISTINCT rfts.id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq rfts WHERE rfts.parent_id = material_rfq.id AND EXISTS (SELECT 1 FROM buyer_d_fdw_rfq_service.quotation q WHERE q.request_for_to_supplier_id = rfts.id AND q.request_for_id = material_rfq.id AND q.submitted_at IS NOT NULL AND q.original_quotation_id IS NULL)) as offered_suppliers_count,
-          (SELECT COUNT(DISTINCT rfts.id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq rfts WHERE rfts.parent_id = material_rfq.id AND rfts.is_active = false) as rejected_suppliers_count,
+          (SELECT COUNT(DISTINCT rfts.id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq rfts WHERE rfts.parent_id = material_rfq.id AND EXISTS (SELECT 1 FROM buyer_d_fdw_rfq_service.quotation q WHERE q.request_for_to_supplier_id = rfts.id AND q.request_for_id = material_rfq.id AND q.submitted_at IS NOT NULL AND q.original_quotation_id = '00000000-0000-0000-0000-000000000000')) as offered_suppliers_count,
+          (SELECT COUNT(DISTINCT rfts.id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq rfts JOIN buyer_d_fdw_rfq_service.state_request_for_to_supplier_material_rfq s ON rfts.current_state_id = s.id WHERE rfts.parent_id = material_rfq.id AND LOWER(s.name) = 'rejected') as rejected_suppliers_count,
           
           -- Standardized Financials (RFQ Only)
           (SELECT MIN(total_price) FROM buyer_d_fdw_rfq_service.quotation q WHERE q.request_for_id = material_rfq.id AND q.is_opened = true AND q.round_number = material_rfq.round_number AND NOT EXISTS (SELECT 1 FROM buyer_d_fdw_rfq_service.quotation_document_item qdi WHERE qdi.root_id = q.id AND qdi.unit_price <= 0 AND qdi.item_type <> 3)) as best_quotation_total,
@@ -82,8 +82,8 @@ cube(`EventsView`, {
           -- Standardized Supplier Counts
           (SELECT COUNT(DISTINCT rfts.id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information rfts WHERE rfts.parent_id = request_for_information.id) as invited_suppliers_count,
           (SELECT COUNT(DISTINCT rfts.id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information rfts WHERE rfts.parent_id = request_for_information.id AND rfts.has_active_status_changed = true) as viewed_suppliers_count,
-          (SELECT COUNT(DISTINCT rfts.id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information rfts WHERE rfts.parent_id = request_for_information.id AND EXISTS (SELECT 1 FROM buyer_d_fdw_rfq_service.quotation q WHERE q.request_for_to_supplier_id = rfts.id AND q.request_for_id = request_for_information.id AND q.submitted_at IS NOT NULL AND q.original_quotation_id IS NULL)) as offered_suppliers_count,
-          (SELECT COUNT(DISTINCT rfts.id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information rfts WHERE rfts.parent_id = request_for_information.id AND rfts.is_active = false) as rejected_suppliers_count,
+          (SELECT COUNT(DISTINCT rfts.id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information rfts WHERE rfts.parent_id = request_for_information.id AND EXISTS (SELECT 1 FROM buyer_d_fdw_rfq_service.quotation q WHERE q.request_for_to_supplier_id = rfts.id AND q.request_for_id = request_for_information.id AND q.submitted_at IS NOT NULL AND q.original_quotation_id = '00000000-0000-0000-0000-000000000000')) as offered_suppliers_count,
+          (SELECT COUNT(DISTINCT rfts.id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information rfts JOIN buyer_d_fdw_rfq_service.state_request_for_to_supplier_request_for_information s ON rfts.current_state_id = s.id WHERE rfts.parent_id = request_for_information.id AND LOWER(s.name) = 'rejected') as rejected_suppliers_count,
           
           -- Standardized Financials (RFI has none)
           NULL as best_quotation_total,
