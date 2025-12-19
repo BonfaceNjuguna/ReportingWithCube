@@ -1,8 +1,8 @@
 // Cube.js schema for Request For To Supplier (RFQ Suppliers)
-// Maps to: public.request_for_to_supplier_material_rfq
+// Maps to: buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq
 
 cube(`RequestForToSupplierMaterialRfq`, {
-  sql: `SELECT * FROM public.request_for_to_supplier_material_rfq`,
+  sql: `SELECT * FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq`,
   
   preAggregations: {
     bySupplier: {

@@ -1,8 +1,8 @@
 // Cube.js schema for Quotation States
-// Maps to: public.state_quotation
+// Maps to: buyer_d_fdw_rfq_service.state_quotation
 
 cube(`StateQuotation`, {
-  sql: `SELECT * FROM public.state_quotation`,
+  sql: `SELECT * FROM buyer_d_fdw_rfq_service.state_quotation`,
   
   measures: {
     count: {

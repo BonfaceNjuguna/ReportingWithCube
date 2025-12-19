@@ -1,8 +1,8 @@
 // Cube.js schema for Material RFQ States
-// Maps to: public.state_material_rfq
+// Maps to: buyer_d_fdw_rfq_service.state_material_rfq
 
 cube(`StateMaterialRfq`, {
-  sql: `SELECT * FROM public.state_material_rfq`,
+  sql: `SELECT * FROM buyer_d_fdw_rfq_service.state_material_rfq`,
   
   measures: {
     count: {

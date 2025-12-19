@@ -1,8 +1,8 @@
 // Cube.js schema for Supplier States
-// Maps to: public.state_request_for_to_supplier_material_rfq
+// Maps to: buyer_d_fdw_rfq_service.state_request_for_to_supplier_material_rfq
 
 cube(`StateRequestForToSupplierMaterialRfq`, {
-  sql: `SELECT * FROM public.state_request_for_to_supplier_material_rfq`,
+  sql: `SELECT * FROM buyer_d_fdw_rfq_service.state_request_for_to_supplier_material_rfq`,
   
   measures: {
     count: {

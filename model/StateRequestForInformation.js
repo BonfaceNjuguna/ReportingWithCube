@@ -1,8 +1,8 @@
 // Cube.js schema for RFI States
-// Maps to: public.state_request_for_information
+// Maps to: buyer_d_fdw_rfq_service.state_request_for_information
 
 cube(`StateRequestForInformation`, {
-  sql: `SELECT * FROM public.state_request_for_information`,
+  sql: `SELECT * FROM buyer_d_fdw_rfq_service.state_request_for_information`,
   
   measures: {
     count: {

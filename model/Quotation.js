@@ -1,8 +1,8 @@
 // Cube.js schema for Quotations
-// Maps to: public.quotation
+// Maps to: buyer_d_fdw_rfq_service.quotation
 
 cube(`Quotation`, {
-  sql: `SELECT * FROM public.quotation`,
+  sql: `SELECT * FROM buyer_d_fdw_rfq_service.quotation`,
   
   preAggregations: {
     main: {

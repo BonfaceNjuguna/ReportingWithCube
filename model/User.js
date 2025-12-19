@@ -1,8 +1,8 @@
 // Cube.js schema for User (foreign table from user service)
-// Maps to: public.user (foreign table)
+// Maps to: buyer_d_fdw_user_service.user (foreign table)
 
 cube(`User`, {
-  sql: `SELECT * FROM public."user"`,
+  sql: `SELECT * FROM buyer_d_fdw_user_service."user"`,
   
   measures: {
     count: {

@@ -1,8 +1,8 @@
 // Cube.js schema for Orders
-// Maps to: public."order"
+// Maps to: buyer_d_fdw_order_service."order"
 
 cube(`Order`, {
-  sql: `SELECT * FROM public."order"`,
+  sql: `SELECT * FROM buyer_d_fdw_order_service."order"`,
   
   preAggregations: {
     main: {

@@ -30,10 +30,10 @@ cube(`EventsView`, {
           has_document_changed,
           has_deadline_changed,
           (SELECT MIN(o.created_at)
-           FROM public."order" o
-           JOIN public.quotation q ON o.source_document_id = q.id
+           FROM buyer_d_fdw_order_service."order" o
+           JOIN buyer_d_fdw_rfq_service.quotation q ON o.source_document_id = q.id
            WHERE q.request_for_id = material_rfq.id) as awarded_at
-    FROM public.material_rfq
+    FROM buyer_d_fdw_rfq_service.material_rfq
 
     UNION ALL
 
@@ -67,7 +67,7 @@ cube(`EventsView`, {
           has_document_changed,
           has_deadline_changed,
           NULL as awarded_at
-    FROM public.request_for_information
+    FROM buyer_d_fdw_rfq_service.request_for_information
   `,
 
   preAggregations: {
@@ -143,8 +143,8 @@ cube(`EventsView`, {
     },
     Order: {
       sql: `EXISTS(
-        SELECT 1 FROM public.quotation q
-        JOIN public."order" o ON o.source_document_id = q.id
+        SELECT 1 FROM buyer_d_fdw_rfq_service.quotation q
+        JOIN buyer_d_fdw_order_service."order" o ON o.source_document_id = q.id
         WHERE q.request_for_id = ${CUBE}.id
       )`,
       relationship: `hasMany`
@@ -162,12 +162,12 @@ cube(`EventsView`, {
         CASE
           WHEN ${CUBE}.event_type = 'RFQ' THEN (
             SELECT COUNT(DISTINCT rfts.id)
-            FROM public.request_for_to_supplier_material_rfq rfts
+            FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq rfts
             WHERE rfts.parent_id = ${CUBE}.id
           )
           WHEN ${CUBE}.event_type = 'RFI' THEN (
             SELECT COUNT(DISTINCT rfts.id)
-            FROM public.request_for_to_supplier_request_for_information rfts
+            FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information rfts
             WHERE rfts.parent_id = ${CUBE}.id
           )
           ELSE 0
@@ -182,13 +182,13 @@ cube(`EventsView`, {
         CASE
           WHEN ${CUBE}.event_type = 'RFQ' THEN (
             SELECT COUNT(DISTINCT rfts.id)
-            FROM public.request_for_to_supplier_material_rfq rfts
+            FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq rfts
             WHERE rfts.parent_id = ${CUBE}.id
               AND rfts.has_active_status_changed = true
           )
           WHEN ${CUBE}.event_type = 'RFI' THEN (
             SELECT COUNT(DISTINCT rfts.id)
-            FROM public.request_for_to_supplier_request_for_information rfts
+            FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information rfts
             WHERE rfts.parent_id = ${CUBE}.id
               AND rfts.has_active_status_changed = true
           )
@@ -204,11 +204,11 @@ cube(`EventsView`, {
         CASE
           WHEN ${CUBE}.event_type = 'RFQ' THEN (
             SELECT COUNT(DISTINCT rfts.id)
-            FROM public.request_for_to_supplier_material_rfq rfts
+            FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq rfts
             WHERE rfts.parent_id = ${CUBE}.id
               AND EXISTS (
                 SELECT 1
-                FROM public.quotation q
+                FROM buyer_d_fdw_rfq_service.quotation q
                 WHERE q.request_for_to_supplier_id = rfts.id
                   AND q.request_for_id = ${CUBE}.id
                   AND q.submitted_at IS NOT NULL
@@ -216,11 +216,11 @@ cube(`EventsView`, {
           )
           WHEN ${CUBE}.event_type = 'RFI' THEN (
             SELECT COUNT(DISTINCT rfts.id)
-            FROM public.request_for_to_supplier_request_for_information rfts
+            FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information rfts
             WHERE rfts.parent_id = ${CUBE}.id
               AND EXISTS (
                 SELECT 1
-                FROM public.quotation q
+                FROM buyer_d_fdw_rfq_service.quotation q
                 WHERE q.request_for_to_supplier_id = rfts.id
                   AND q.request_for_id = ${CUBE}.id
                   AND q.submitted_at IS NOT NULL
@@ -238,13 +238,13 @@ cube(`EventsView`, {
         CASE
           WHEN ${CUBE}.event_type = 'RFQ' THEN (
             SELECT COUNT(DISTINCT rfts.id)
-            FROM public.request_for_to_supplier_material_rfq rfts
+            FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq rfts
             WHERE rfts.parent_id = ${CUBE}.id
               AND rfts.is_active = false
           )
           WHEN ${CUBE}.event_type = 'RFI' THEN (
             SELECT COUNT(DISTINCT rfts.id)
-            FROM public.request_for_to_supplier_request_for_information rfts
+            FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information rfts
             WHERE rfts.parent_id = ${CUBE}.id
               AND rfts.is_active = false
           )
@@ -311,29 +311,29 @@ cube(`EventsView`, {
         CASE 
           WHEN ${CUBE}.event_type = 'RFQ' THEN
             CASE 
-              WHEN (SELECT COUNT(DISTINCT id) FROM public.request_for_to_supplier_material_rfq WHERE parent_id = ${CUBE}.id) > 0 
+              WHEN (SELECT COUNT(DISTINCT id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq WHERE parent_id = ${CUBE}.id) > 0 
               THEN (
                 (SELECT COUNT(DISTINCT rfts.id)
-                 FROM public.request_for_to_supplier_material_rfq rfts
-                 JOIN public.quotation q ON q.request_for_id = rfts.parent_id AND q.request_for_to_supplier_id = rfts.id
+                 FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq rfts
+                 JOIN buyer_d_fdw_rfq_service.quotation q ON q.request_for_id = rfts.parent_id AND q.request_for_to_supplier_id = rfts.id
                  WHERE rfts.parent_id = ${CUBE}.id 
                    AND q.submitted_at IS NOT NULL 
                    AND q.original_quotation_id IS NULL)::FLOAT /
-                (SELECT COUNT(DISTINCT id) FROM public.request_for_to_supplier_material_rfq WHERE parent_id = ${CUBE}.id)
+                (SELECT COUNT(DISTINCT id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq WHERE parent_id = ${CUBE}.id)
               ) * 100 
               ELSE 0 
             END
           WHEN ${CUBE}.event_type = 'RFI' THEN
             CASE 
-              WHEN (SELECT COUNT(DISTINCT id) FROM public.request_for_to_supplier_request_for_information WHERE parent_id = ${CUBE}.id) > 0 
+              WHEN (SELECT COUNT(DISTINCT id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information WHERE parent_id = ${CUBE}.id) > 0 
               THEN (
                 (SELECT COUNT(DISTINCT rfts.id)
-                 FROM public.request_for_to_supplier_request_for_information rfts
-                 JOIN public.quotation q ON q.request_for_id = rfts.parent_id AND q.request_for_to_supplier_id = rfts.id
+                 FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information rfts
+                 JOIN buyer_d_fdw_rfq_service.quotation q ON q.request_for_id = rfts.parent_id AND q.request_for_to_supplier_id = rfts.id
                  WHERE rfts.parent_id = ${CUBE}.id 
                    AND q.submitted_at IS NOT NULL 
                    AND q.original_quotation_id IS NULL)::FLOAT /
-                (SELECT COUNT(DISTINCT id) FROM public.request_for_to_supplier_request_for_information WHERE parent_id = ${CUBE}.id)
+                (SELECT COUNT(DISTINCT id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information WHERE parent_id = ${CUBE}.id)
               ) * 100 
               ELSE 0 
             END
@@ -350,29 +350,29 @@ cube(`EventsView`, {
         CASE 
           WHEN ${CUBE}.event_type = 'RFQ' THEN
             CASE 
-              WHEN (SELECT COUNT(DISTINCT id) FROM public.request_for_to_supplier_material_rfq WHERE parent_id = ${CUBE}.id) > 0 
+              WHEN (SELECT COUNT(DISTINCT id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq WHERE parent_id = ${CUBE}.id) > 0 
               THEN (
                 (SELECT COUNT(DISTINCT rfts.id)
-                 FROM public.request_for_to_supplier_material_rfq rfts
-                 JOIN public.quotation q ON q.request_for_id = rfts.parent_id AND q.request_for_to_supplier_id = rfts.id
+                 FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq rfts
+                 JOIN buyer_d_fdw_rfq_service.quotation q ON q.request_for_id = rfts.parent_id AND q.request_for_to_supplier_id = rfts.id
                  WHERE rfts.parent_id = ${CUBE}.id 
                    AND q.submitted_at IS NOT NULL 
                    AND q.original_quotation_id IS NULL)::FLOAT /
-                (SELECT COUNT(DISTINCT id) FROM public.request_for_to_supplier_material_rfq WHERE parent_id = ${CUBE}.id)
+                (SELECT COUNT(DISTINCT id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq WHERE parent_id = ${CUBE}.id)
               ) * 100 
               ELSE 0 
             END
           WHEN ${CUBE}.event_type = 'RFI' THEN
             CASE 
-              WHEN (SELECT COUNT(DISTINCT id) FROM public.request_for_to_supplier_request_for_information WHERE parent_id = ${CUBE}.id) > 0 
+              WHEN (SELECT COUNT(DISTINCT id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information WHERE parent_id = ${CUBE}.id) > 0 
               THEN (
                 (SELECT COUNT(DISTINCT rfts.id)
-                 FROM public.request_for_to_supplier_request_for_information rfts
-                 JOIN public.quotation q ON q.request_for_id = rfts.parent_id AND q.request_for_to_supplier_id = rfts.id
+                 FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information rfts
+                 JOIN buyer_d_fdw_rfq_service.quotation q ON q.request_for_id = rfts.parent_id AND q.request_for_to_supplier_id = rfts.id
                  WHERE rfts.parent_id = ${CUBE}.id 
                    AND q.submitted_at IS NOT NULL 
                    AND q.original_quotation_id IS NULL)::FLOAT /
-                (SELECT COUNT(DISTINCT id) FROM public.request_for_to_supplier_request_for_information WHERE parent_id = ${CUBE}.id)
+                (SELECT COUNT(DISTINCT id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information WHERE parent_id = ${CUBE}.id)
               ) * 100 
               ELSE 0 
             END
@@ -388,25 +388,25 @@ cube(`EventsView`, {
         CASE 
           WHEN ${CUBE}.event_type = 'RFQ' THEN
             CASE 
-              WHEN (SELECT COUNT(DISTINCT id) FROM public.request_for_to_supplier_material_rfq WHERE parent_id = ${CUBE}.id) > 0 
+              WHEN (SELECT COUNT(DISTINCT id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq WHERE parent_id = ${CUBE}.id) > 0 
               THEN (
                 (SELECT COUNT(DISTINCT id)
-                 FROM public.request_for_to_supplier_material_rfq
+                 FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq
                  WHERE parent_id = ${CUBE}.id 
                    AND has_active_status_changed = true)::FLOAT /
-                (SELECT COUNT(DISTINCT id) FROM public.request_for_to_supplier_material_rfq WHERE parent_id = ${CUBE}.id)
+                (SELECT COUNT(DISTINCT id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq WHERE parent_id = ${CUBE}.id)
               ) * 100 
               ELSE 0 
             END
           WHEN ${CUBE}.event_type = 'RFI' THEN
             CASE 
-              WHEN (SELECT COUNT(DISTINCT id) FROM public.request_for_to_supplier_request_for_information WHERE parent_id = ${CUBE}.id) > 0 
+              WHEN (SELECT COUNT(DISTINCT id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information WHERE parent_id = ${CUBE}.id) > 0 
               THEN (
                 (SELECT COUNT(DISTINCT id)
-                 FROM public.request_for_to_supplier_request_for_information
+                 FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information
                  WHERE parent_id = ${CUBE}.id 
                    AND has_active_status_changed = true)::FLOAT /
-                (SELECT COUNT(DISTINCT id) FROM public.request_for_to_supplier_request_for_information WHERE parent_id = ${CUBE}.id)
+                (SELECT COUNT(DISTINCT id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information WHERE parent_id = ${CUBE}.id)
               ) * 100 
               ELSE 0 
             END
@@ -423,25 +423,25 @@ cube(`EventsView`, {
         CASE 
           WHEN ${CUBE}.event_type = 'RFQ' THEN
             CASE 
-              WHEN (SELECT COUNT(DISTINCT id) FROM public.request_for_to_supplier_material_rfq WHERE parent_id = ${CUBE}.id) > 0 
+              WHEN (SELECT COUNT(DISTINCT id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq WHERE parent_id = ${CUBE}.id) > 0 
               THEN (
                 (SELECT COUNT(DISTINCT id)
-                 FROM public.request_for_to_supplier_material_rfq
+                 FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq
                  WHERE parent_id = ${CUBE}.id 
                    AND is_active = false)::FLOAT /
-                (SELECT COUNT(DISTINCT id) FROM public.request_for_to_supplier_material_rfq WHERE parent_id = ${CUBE}.id)
+                (SELECT COUNT(DISTINCT id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq WHERE parent_id = ${CUBE}.id)
               ) * 100 
               ELSE 0 
             END
           WHEN ${CUBE}.event_type = 'RFI' THEN
             CASE 
-              WHEN (SELECT COUNT(DISTINCT id) FROM public.request_for_to_supplier_request_for_information WHERE parent_id = ${CUBE}.id) > 0 
+              WHEN (SELECT COUNT(DISTINCT id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information WHERE parent_id = ${CUBE}.id) > 0 
               THEN (
                 (SELECT COUNT(DISTINCT id)
-                 FROM public.request_for_to_supplier_request_for_information
+                 FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information
                  WHERE parent_id = ${CUBE}.id 
                    AND is_active = false)::FLOAT /
-                (SELECT COUNT(DISTINCT id) FROM public.request_for_to_supplier_request_for_information WHERE parent_id = ${CUBE}.id)
+                (SELECT COUNT(DISTINCT id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information WHERE parent_id = ${CUBE}.id)
               ) * 100 
               ELSE 0 
             END
@@ -459,17 +459,17 @@ cube(`EventsView`, {
           SELECT MIN(quotation_total)
           FROM (
             SELECT q.id as quotation_id, q.total_price as quotation_total
-            FROM public.quotation q
+            FROM buyer_d_fdw_rfq_service.quotation q
             WHERE q.request_for_id = ${CUBE}.id
               AND q.is_opened = true
               AND q.round_number = (
                 SELECT MAX(inner_q.round_number)
-                FROM public.quotation inner_q
+                FROM buyer_d_fdw_rfq_service.quotation inner_q
                 WHERE inner_q.request_for_id = q.request_for_id
               )
               AND NOT EXISTS (
                 SELECT 1
-                FROM public.quotation_document_item qdi
+                FROM buyer_d_fdw_rfq_service.quotation_document_item qdi
                 WHERE qdi.root_id = q.id
                   AND qdi.unit_price <= 0
                   AND qdi.item_type <> 3
@@ -489,17 +489,17 @@ cube(`EventsView`, {
           SELECT AVG(quotation_total)
           FROM (
             SELECT q.id as quotation_id, q.total_price as quotation_total
-            FROM public.quotation q
+            FROM buyer_d_fdw_rfq_service.quotation q
             WHERE q.request_for_id = ${CUBE}.id
               AND q.is_opened = true
               AND q.round_number = (
                 SELECT MAX(inner_q.round_number)
-                FROM public.quotation inner_q
+                FROM buyer_d_fdw_rfq_service.quotation inner_q
                 WHERE inner_q.request_for_id = q.request_for_id
               )
               AND NOT EXISTS (
                 SELECT 1
-                FROM public.quotation_document_item qdi
+                FROM buyer_d_fdw_rfq_service.quotation_document_item qdi
                 WHERE qdi.root_id = q.id
                   AND qdi.unit_price <= 0
                   AND qdi.item_type <> 3
@@ -518,17 +518,17 @@ cube(`EventsView`, {
           SELECT SUM(quotation_total)
           FROM (
             SELECT q.id as quotation_id, q.total_price as quotation_total
-            FROM public.quotation q
+            FROM buyer_d_fdw_rfq_service.quotation q
             WHERE q.request_for_id = ${CUBE}.id
               AND q.is_opened = true
               AND q.round_number = (
                 SELECT MAX(inner_q.round_number)
-                FROM public.quotation inner_q
+                FROM buyer_d_fdw_rfq_service.quotation inner_q
                 WHERE inner_q.request_for_id = q.request_for_id
               )
               AND NOT EXISTS (
                 SELECT 1
-                FROM public.quotation_document_item qdi
+                FROM buyer_d_fdw_rfq_service.quotation_document_item qdi
                 WHERE qdi.root_id = q.id
                   AND qdi.unit_price <= 0
                   AND qdi.item_type <> 3
@@ -545,7 +545,7 @@ cube(`EventsView`, {
       sql: `
         (
           SELECT COUNT(DISTINCT q.id)
-          FROM public.quotation q
+          FROM buyer_d_fdw_rfq_service.quotation q
           WHERE q.request_for_id = ${CUBE}.id
         )
       `,
@@ -563,8 +563,8 @@ cube(`EventsView`, {
       sql: `
         (
           SELECT COUNT(DISTINCT rfts.id)
-          FROM public.request_for_to_supplier_material_rfq rfts
-          JOIN public.state_request_for_to_supplier_material_rfq s
+          FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq rfts
+          JOIN buyer_d_fdw_rfq_service.state_request_for_to_supplier_material_rfq s
             ON s.id = rfts.current_state_id
           WHERE rfts.parent_id = ${CUBE}.id
             AND ${CUBE}.event_type = 'RFQ'
@@ -579,8 +579,8 @@ cube(`EventsView`, {
       sql: `
         (
           SELECT COUNT(DISTINCT rfts.id)
-          FROM public.request_for_to_supplier_material_rfq rfts
-          JOIN public.state_request_for_to_supplier_material_rfq s
+          FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq rfts
+          JOIN buyer_d_fdw_rfq_service.state_request_for_to_supplier_material_rfq s
             ON s.id = rfts.current_state_id
           WHERE rfts.parent_id = ${CUBE}.id
             AND ${CUBE}.event_type = 'RFQ'
@@ -595,8 +595,8 @@ cube(`EventsView`, {
       sql: `
         (
           SELECT COUNT(DISTINCT rfts.id)
-          FROM public.request_for_to_supplier_material_rfq rfts
-          JOIN public.state_request_for_to_supplier_material_rfq s
+          FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq rfts
+          JOIN buyer_d_fdw_rfq_service.state_request_for_to_supplier_material_rfq s
             ON s.id = rfts.current_state_id
           WHERE rfts.parent_id = ${CUBE}.id
             AND ${CUBE}.event_type = 'RFQ'
@@ -828,8 +828,8 @@ cube(`EventsView`, {
     
     hasOrders: {
       sql: `EXISTS(
-        SELECT 1 FROM public.quotation q
-        JOIN public."order" o ON o.source_document_id = q.id
+        SELECT 1 FROM buyer_d_fdw_rfq_service.quotation q
+        JOIN buyer_d_fdw_order_service."order" o ON o.source_document_id = q.id
         WHERE q.request_for_id = ${CUBE}.id
       )`,
       type: `boolean`,
