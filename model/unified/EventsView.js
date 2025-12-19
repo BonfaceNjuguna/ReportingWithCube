@@ -30,21 +30,21 @@ cube(`EventsView`, {
           has_document_changed,
           has_deadline_changed,
           (SELECT MIN(o.created_at)
-           FROM public."order" o
-           JOIN public.quotation q ON o.source_document_id = q.id
+           FROM buyer_d_fdw_order_service."order" o
+           JOIN buyer_d_fdw_rfq_service.quotation q ON o.source_document_id = q.id
            WHERE q.request_for_id = material_rfq.id) as awarded_at,
           
           -- Standardized Supplier Counts
-          (SELECT COUNT(DISTINCT rfts.id) FROM public.request_for_to_supplier_material_rfq rfts WHERE rfts.parent_id = material_rfq.id) as invited_suppliers_count,
-          (SELECT COUNT(DISTINCT rfts.id) FROM public.request_for_to_supplier_material_rfq rfts WHERE rfts.parent_id = material_rfq.id AND rfts.has_active_status_changed = true) as viewed_suppliers_count,
-          (SELECT COUNT(DISTINCT rfts.id) FROM public.request_for_to_supplier_material_rfq rfts WHERE rfts.parent_id = material_rfq.id AND EXISTS (SELECT 1 FROM public.quotation q WHERE q.request_for_to_supplier_id = rfts.id AND q.request_for_id = material_rfq.id AND q.submitted_at IS NOT NULL AND q.original_quotation_id IS NULL)) as offered_suppliers_count,
-          (SELECT COUNT(DISTINCT rfts.id) FROM public.request_for_to_supplier_material_rfq rfts WHERE rfts.parent_id = material_rfq.id AND rfts.is_active = false) as rejected_suppliers_count,
+          (SELECT COUNT(DISTINCT rfts.id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq rfts WHERE rfts.parent_id = material_rfq.id) as invited_suppliers_count,
+          (SELECT COUNT(DISTINCT rfts.id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq rfts WHERE rfts.parent_id = material_rfq.id AND rfts.has_active_status_changed = true) as viewed_suppliers_count,
+          (SELECT COUNT(DISTINCT rfts.id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq rfts WHERE rfts.parent_id = material_rfq.id AND EXISTS (SELECT 1 FROM buyer_d_fdw_rfq_service.quotation q WHERE q.request_for_to_supplier_id = rfts.id AND q.request_for_id = material_rfq.id AND q.submitted_at IS NOT NULL AND q.original_quotation_id IS NULL)) as offered_suppliers_count,
+          (SELECT COUNT(DISTINCT rfts.id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_material_rfq rfts WHERE rfts.parent_id = material_rfq.id AND rfts.is_active = false) as rejected_suppliers_count,
           
           -- Standardized Financials (RFQ Only)
-          (SELECT MIN(total_price) FROM public.quotation q WHERE q.request_for_id = material_rfq.id AND q.is_opened = true AND q.round_number = material_rfq.round_number AND NOT EXISTS (SELECT 1 FROM public.quotation_document_item qdi WHERE qdi.root_id = q.id AND qdi.unit_price <= 0 AND qdi.item_type <> 3)) as best_quotation_total,
-          (SELECT SUM(total_price) FROM public.quotation q WHERE q.request_for_id = material_rfq.id AND q.is_opened = true AND q.round_number = material_rfq.round_number AND NOT EXISTS (SELECT 1 FROM public.quotation_document_item qdi WHERE qdi.root_id = q.id AND qdi.unit_price <= 0 AND qdi.item_type <> 3)) as quotation_total_sum,
-          (SELECT COUNT(*) FROM public.quotation q WHERE q.request_for_id = material_rfq.id AND q.is_opened = true AND q.round_number = material_rfq.round_number AND NOT EXISTS (SELECT 1 FROM public.quotation_document_item qdi WHERE qdi.root_id = q.id AND qdi.unit_price <= 0 AND qdi.item_type <> 3)) as quotation_count_valid
-    FROM public.material_rfq
+          (SELECT MIN(total_price) FROM buyer_d_fdw_rfq_service.quotation q WHERE q.request_for_id = material_rfq.id AND q.is_opened = true AND q.round_number = material_rfq.round_number AND NOT EXISTS (SELECT 1 FROM buyer_d_fdw_rfq_service.quotation_document_item qdi WHERE qdi.root_id = q.id AND qdi.unit_price <= 0 AND qdi.item_type <> 3)) as best_quotation_total,
+          (SELECT SUM(total_price) FROM buyer_d_fdw_rfq_service.quotation q WHERE q.request_for_id = material_rfq.id AND q.is_opened = true AND q.round_number = material_rfq.round_number AND NOT EXISTS (SELECT 1 FROM buyer_d_fdw_rfq_service.quotation_document_item qdi WHERE qdi.root_id = q.id AND qdi.unit_price <= 0 AND qdi.item_type <> 3)) as quotation_total_sum,
+          (SELECT COUNT(*) FROM buyer_d_fdw_rfq_service.quotation q WHERE q.request_for_id = material_rfq.id AND q.is_opened = true AND q.round_number = material_rfq.round_number AND NOT EXISTS (SELECT 1 FROM buyer_d_fdw_rfq_service.quotation_document_item qdi WHERE qdi.root_id = q.id AND qdi.unit_price <= 0 AND qdi.item_type <> 3)) as quotation_count_valid
+    FROM buyer_d_fdw_rfq_service.material_rfq
 
     UNION ALL
 
@@ -80,16 +80,16 @@ cube(`EventsView`, {
           NULL as awarded_at,
           
           -- Standardized Supplier Counts
-          (SELECT COUNT(DISTINCT rfts.id) FROM public.request_for_to_supplier_request_for_information rfts WHERE rfts.parent_id = request_for_information.id) as invited_suppliers_count,
-          (SELECT COUNT(DISTINCT rfts.id) FROM public.request_for_to_supplier_request_for_information rfts WHERE rfts.parent_id = request_for_information.id AND rfts.has_active_status_changed = true) as viewed_suppliers_count,
-          (SELECT COUNT(DISTINCT rfts.id) FROM public.request_for_to_supplier_request_for_information rfts WHERE rfts.parent_id = request_for_information.id AND EXISTS (SELECT 1 FROM public.quotation q WHERE q.request_for_to_supplier_id = rfts.id AND q.request_for_id = request_for_information.id AND q.submitted_at IS NOT NULL AND q.original_quotation_id IS NULL)) as offered_suppliers_count,
-          (SELECT COUNT(DISTINCT rfts.id) FROM public.request_for_to_supplier_request_for_information rfts WHERE rfts.parent_id = request_for_information.id AND rfts.is_active = false) as rejected_suppliers_count,
+          (SELECT COUNT(DISTINCT rfts.id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information rfts WHERE rfts.parent_id = request_for_information.id) as invited_suppliers_count,
+          (SELECT COUNT(DISTINCT rfts.id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information rfts WHERE rfts.parent_id = request_for_information.id AND rfts.has_active_status_changed = true) as viewed_suppliers_count,
+          (SELECT COUNT(DISTINCT rfts.id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information rfts WHERE rfts.parent_id = request_for_information.id AND EXISTS (SELECT 1 FROM buyer_d_fdw_rfq_service.quotation q WHERE q.request_for_to_supplier_id = rfts.id AND q.request_for_id = request_for_information.id AND q.submitted_at IS NOT NULL AND q.original_quotation_id IS NULL)) as offered_suppliers_count,
+          (SELECT COUNT(DISTINCT rfts.id) FROM buyer_d_fdw_rfq_service.request_for_to_supplier_request_for_information rfts WHERE rfts.parent_id = request_for_information.id AND rfts.is_active = false) as rejected_suppliers_count,
           
           -- Standardized Financials (RFI has none)
           NULL as best_quotation_total,
           NULL as quotation_total_sum,
           NULL as quotation_count_valid
-    FROM public.request_for_information
+    FROM buyer_d_fdw_rfq_service.request_for_information
   `,
 
   preAggregations: {
@@ -289,7 +289,7 @@ cube(`EventsView`, {
       sql: `
         (
           SELECT COUNT(DISTINCT q.id)
-          FROM public.quotation q
+          FROM buyer_d_fdw_rfq_service.quotation q
           WHERE q.request_for_id = ${CUBE}.id
         )
       `,
