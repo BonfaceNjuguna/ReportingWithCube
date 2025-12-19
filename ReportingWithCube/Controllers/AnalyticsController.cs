@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using System.Diagnostics;
 using ReportingWithCube.Analytics.Models;
 using ReportingWithCube.Analytics.Translation;

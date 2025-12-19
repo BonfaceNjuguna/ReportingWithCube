@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ReportingWithCube.Data;
 using ReportingWithCube.Services;
 using ReportingWithCube.Analytics.Translation;
+using ReportingWithCube.Analytics.Translation.Strategies;
 using ReportingWithCube.Analytics.Validation;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -42,6 +43,12 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 // Register translation layer services
 builder.Services.AddSingleton<IDatasetRegistry, DatasetRegistry>();
+
+// Register translation strategies
+builder.Services.AddScoped<ITranslationStrategy, EventTranslationStrategy>();
+builder.Services.AddScoped<ITranslationStrategy, SupplierTranslationStrategy>();
+builder.Services.AddScoped<ITranslationStrategy, ItemTranslationStrategy>();
+
 builder.Services.AddScoped<IAnalyticsQueryBuilder, AnalyticsQueryBuilder>();
 builder.Services.AddScoped<IAnalyticsQueryValidator, AnalyticsQueryValidator>();
 
