@@ -106,14 +106,6 @@ public static class EventMeasures
         Format = MeasureType.TimeBased.GetDefaultFormat()
     };
 
-    public static MeasureDefinition AvgCycleTimeDays() => new()
-    {
-        CubeMember = "EventsView.avgCycleTimeDays",
-        Label = "Average Cycle Time (Days)",
-        Type = MeasureType.Average.GetDefaultType(),
-        Format = MeasureType.Average.GetDefaultFormat()
-    };
-
     // Rate KPI measures
     public static MeasureDefinition QuotationRate() => new()
     {

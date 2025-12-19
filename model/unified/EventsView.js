@@ -98,7 +98,6 @@ cube(`EventsView`, {
         EventsView.count,
         EventsView.quotationRate,
         EventsView.rejectRate,
-        EventsView.avgCycleTimeDays,
         EventsView.avgOfferPeriodDays,
         EventsView.invitedSuppliersCount,
         EventsView.offeredSuppliersCount,
@@ -121,8 +120,7 @@ cube(`EventsView`, {
     byCreator: {
       measures: [
         EventsView.count,
-        EventsView.avgQuotationRate,
-        EventsView.avgCycleTimeDays
+        EventsView.avgQuotationRate
       ],
       dimensions: [EventsView.createdBy],
       timeDimension: EventsView.createdAt,
@@ -215,19 +213,6 @@ cube(`EventsView`, {
       format: `number`,
       title: `Cycle Time (Days)`,
       description: `Time from event start to award decision (first order/contract created)`
-    },
-
-    avgCycleTimeDays: {
-      sql: `
-            CASE
-              WHEN ${CUBE}.awarded_at IS NOT NULL AND ${CUBE}.started_date IS NOT NULL
-              THEN ROUND(EXTRACT(EPOCH FROM (${CUBE}.awarded_at - ${CUBE}.started_date)) / 86400)
-              ELSE NULL
-            END`,
-      type: `avg`,
-      format: `number`,
-      title: `Average Cycle Time (Days)`,
-      description: `Average time from event start to award decision`
     },
     
     // KPI measures - RATES

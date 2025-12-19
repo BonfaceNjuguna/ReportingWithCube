@@ -57,7 +57,6 @@ public class EventDatasetBuilder : IDatasetBuilder
         AddIfApplicable(measures, "offer_period_days", EventMeasures.OfferPeriodDays(), eventType);
         AddIfApplicable(measures, "avg_offer_period_days", EventMeasures.AvgOfferPeriodDays(), eventType);
         AddIfApplicable(measures, "cycle_time_days", EventMeasures.CycleTimeDays(), eventType);
-        AddIfApplicable(measures, "avg_cycle_time_days", EventMeasures.AvgCycleTimeDays(), eventType);
 
         // Rate KPI measures - always applicable
         AddIfApplicable(measures, "quotation_rate", EventMeasures.QuotationRate(), eventType);
