@@ -265,7 +265,7 @@ cube(`EventsView`, {
     // KPI measures - FINANCIALS
     bestQuotationTotal: {
       sql: `best_quotation_total`,
-      type: `max`,
+      type: `min`,
       format: `currency`,
       title: `Best Quotation Total`,
       description: `Lowest opened quotation from latest round (excludes quotations with invalid pricing)`
@@ -280,7 +280,7 @@ cube(`EventsView`, {
 
     quotationTotal: {
       sql: `quotation_total_sum`,
-      type: `max`,
+      type: `sum`,
       format: `currency`,
       title: `Quotation Total`
     },
@@ -293,7 +293,7 @@ cube(`EventsView`, {
           WHERE q.request_for_id = ${CUBE}.id
         )
       `,
-      type: `max`,
+      type: `sum`,
       title: `Opened Quotations Count`
     },
 
