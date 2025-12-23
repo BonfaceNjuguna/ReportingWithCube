@@ -75,7 +75,8 @@ public static class EventFilters
         Label = "Status Name",
         Type = FilterType.String,
         CubeMember = "EventsView.stateName",
-        AllowedOperators = ["equals", "notEquals", "in", "contains"]
+        AllowedOperators = ["equals", "notEquals", "in", "contains"],
+        AllowedValues = ["InPreparation", "Running", "Closed", "Completed", "Canceled"]
     };
 
     public static FilterDefinition CreatedAt() => new()

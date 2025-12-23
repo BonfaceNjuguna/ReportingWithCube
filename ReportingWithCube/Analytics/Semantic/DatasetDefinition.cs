@@ -36,6 +36,7 @@ public record FilterDefinition
     public string Label { get; init; } = string.Empty;
     public FilterType Type { get; init; }
     public string[] AllowedOperators { get; init; } = Array.Empty<string>();
+    public string[]? AllowedValues { get; init; } = null;
     public string[]? ApplicableEventTypes { get; init; } = null;
 }
 

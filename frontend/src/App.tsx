@@ -8,7 +8,7 @@ import type { AnalyticsQuery, AnalyticsResponse, ColumnMetadata } from './types/
 
 const defaultQuery: AnalyticsQuery = {
   datasetId: 'events',
-  kpis: ['event_count', 'cycle_time_days'],
+  kpis: ['cycle_time_days'],
   groupBy: ['event_number', 'event_name', 'event_type', 'state_name'],
   filters: [],
   sort: {
@@ -43,28 +43,11 @@ function App() {
 
   const insightPresets: InsightPreset[] = useMemo(() => [
     {
-      id: 'volume-mix',
-      title: 'RFQ vs RFI volume over time',
-      description: 'Event count by type, trended by created date. Good for seasonality and mix.',
-      datasetId: 'events',
-      kpis: ['event_count'],
-      groupBy: ['created_at', 'event_type'],
-      sort: { by: 'created_at', direction: 'desc' }
-    },
-    {
-      id: 'status-funnel',
-      title: 'Status distribution',
-      description: 'Where events sit in the process. Stack by status and type.',
-      datasetId: 'events',
-      kpis: ['event_count'],
-      groupBy: ['state_name', 'event_type']
-    },
-    {
       id: 'cycle-time',
       title: 'Cycle & offer period trend',
-      description: 'Average cycle time and offer period over time, split by RFQ/RFI.',
+      description: 'Cycle time and offer period over time, split by RFQ/RFI.',
       datasetId: 'events',
-      kpis: ['avg_cycle_time_days', 'avg_offer_period_days'],
+      kpis: ['cycle_time_days', 'offer_period_days'],
       groupBy: ['created_at', 'event_type'],
       sort: { by: 'created_at', direction: 'desc' }
     },

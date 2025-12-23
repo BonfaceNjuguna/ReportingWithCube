@@ -173,7 +173,6 @@ out/
 build/
 ARCHITECTURE_DOCUMENTATION.md
 RATE-CALCULATION-GUIDE.md
-.gitignore
 example-queries/event-kpi-summary.json
 example-queries/event-list-detailed.json
 example-queries/test-rates.json
@@ -184,3 +183,8 @@ KPI_REQUIREMENTS_ANALYSIS.md
 README.md
 frontend/README.md
 EPIC_REQUIREMENTS_GAP_ANALYSIS.md
+example-queries/working-simple-query.json
+example-queries/organization-filters-example.json
+example-queries/or-filter-example.json
+example-queries/complex-filter-combination.json
+example-queries/organization-filters-example.json
