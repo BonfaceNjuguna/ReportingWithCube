@@ -78,7 +78,6 @@ export function AnalyticsChart({
       'event_name': ['rfqname', 'name', 'eventname'],
       'event_type': ['eventtype', 'type'],
       'state_name': ['statename', 'status'],
-      'event_count': ['count'],
       'cycle_time_days': ['cycletimedays', 'cycletime'],
       'created_at': ['createdat', 'created'],
       'deadline': ['deadline', 'duedate'],

@@ -112,5 +112,6 @@ export interface SchemaFilter {
   label: string;
   type: string;
   operators: FilterOperator[];
+  allowedValues?: string[] | null;
   applicableEventTypes?: string[] | null;
 }

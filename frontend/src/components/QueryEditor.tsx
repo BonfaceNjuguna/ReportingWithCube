@@ -222,7 +222,7 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
         
         <MultiSelect
           label="Status"
-          options={['InPreparation', 'Published', 'Ongoing', 'Closed', 'Completed', 'Cancelled', 'Awarded']}
+          options={schema?.filters.find(f => f.id === 'state_name')?.allowedValues ?? ['InPreparation', 'Running', 'Closed', 'Completed', 'Canceled']}
           value={getSelectedStatuses()}
           onChange={handleStatusChange}
           placeholder="Select statuses..."
