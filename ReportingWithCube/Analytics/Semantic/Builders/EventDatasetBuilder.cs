@@ -31,7 +31,7 @@ public class EventDatasetBuilder : IDatasetBuilder
                 TenantFilterMember = "EventsView.tenant",
                 UserFilterMember = "EventsView.createdBy",
                 MaxLimit = 1000,
-                MaxDateRangeDays = 365
+                MaxDateRangeDays = 730
             }
         };
     }
@@ -40,13 +40,11 @@ public class EventDatasetBuilder : IDatasetBuilder
     {
         var measures = new Dictionary<string, MeasureDefinition>();
 
-        // Count measures - always applicable
-        AddIfApplicable(measures, "event_count", EventMeasures.EventCount(), eventType);
+        // Count measures - supplier counts only
         AddIfApplicable(measures, "invited_suppliers_count", EventMeasures.InvitedSuppliersCount(), eventType);
         AddIfApplicable(measures, "viewed_suppliers_count", EventMeasures.ViewedSuppliersCount(), eventType);
         AddIfApplicable(measures, "offered_suppliers_count", EventMeasures.OfferedSuppliersCount(), eventType);
         AddIfApplicable(measures, "rejected_suppliers_count", EventMeasures.RejectedSuppliersCount(), eventType);
-        AddIfApplicable(measures, "opened_quotations_count", EventMeasures.OpenedQuotationsCount(), eventType);
 
         // Financial measures - RFQ only
         AddIfApplicable(measures, "best_quotation_total", EventMeasures.BestQuotationTotal(), eventType);
@@ -55,17 +53,12 @@ public class EventDatasetBuilder : IDatasetBuilder
 
         // Time-based KPI measures - always applicable
         AddIfApplicable(measures, "offer_period_days", EventMeasures.OfferPeriodDays(), eventType);
-        AddIfApplicable(measures, "avg_offer_period_days", EventMeasures.AvgOfferPeriodDays(), eventType);
         AddIfApplicable(measures, "cycle_time_days", EventMeasures.CycleTimeDays(), eventType);
-        AddIfApplicable(measures, "avg_cycle_time_days", EventMeasures.AvgCycleTimeDays(), eventType);
 
         // Rate KPI measures - always applicable
         AddIfApplicable(measures, "quotation_rate", EventMeasures.QuotationRate(), eventType);
         AddIfApplicable(measures, "response_rate", EventMeasures.ResponseRate(), eventType);
         AddIfApplicable(measures, "reject_rate", EventMeasures.RejectRate(), eventType);
-
-        // Aggregate measures - always applicable
-        AddIfApplicable(measures, "last_round_number", EventMeasures.LastRoundNumber(), eventType);
 
         return measures;
     }

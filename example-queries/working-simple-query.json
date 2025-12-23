@@ -1,9 +1,8 @@
 {
   "datasetId": "events",
   "kpis": [
-    "event_count",
     "invited_suppliers_count",
-    "suppliers_submitted_count"
+    "offered_suppliers_count"
   ],
   "groupBy": [
     "event_number",

@@ -4,15 +4,7 @@ namespace ReportingWithCube.Analytics.Semantic.Definitions.Shared;
 
 public static class EventMeasures
 {
-    // Count measures
-    public static MeasureDefinition EventCount() => new()
-    {
-        CubeMember = "EventsView.count",
-        Label = "Event Count",
-        Type = MeasureType.Count.GetDefaultType(),
-        Format = MeasureType.Count.GetDefaultFormat()
-    };
-
+    // Count measures - supplier counts only
     public static MeasureDefinition InvitedSuppliersCount() => new()
     {
         CubeMember = "EventsView.invitedSuppliersCount",
@@ -41,14 +33,6 @@ public static class EventMeasures
     {
         CubeMember = "EventsView.rejectedSuppliersCount",
         Label = "Number of Suppliers (Rejected)",
-        Type = MeasureType.Count.GetDefaultType(),
-        Format = MeasureType.Count.GetDefaultFormat()
-    };
-
-    public static MeasureDefinition OpenedQuotationsCount() => new()
-    {
-        CubeMember = "EventsView.openedQuotationsCount",
-        Label = "Opened Quotations Count",
         Type = MeasureType.Count.GetDefaultType(),
         Format = MeasureType.Count.GetDefaultFormat()
     };
@@ -90,28 +74,12 @@ public static class EventMeasures
         Format = MeasureType.TimeBased.GetDefaultFormat()
     };
 
-    public static MeasureDefinition AvgOfferPeriodDays() => new()
-    {
-        CubeMember = "EventsView.avgOfferPeriodDays",
-        Label = "Average Offer Period (Days)",
-        Type = MeasureType.Average.GetDefaultType(),
-        Format = MeasureType.Average.GetDefaultFormat()
-    };
-
     public static MeasureDefinition CycleTimeDays() => new()
     {
         CubeMember = "EventsView.cycleTimeDays",
         Label = "Cycle Time (Days)",
         Type = MeasureType.TimeBased.GetDefaultType(),
         Format = MeasureType.TimeBased.GetDefaultFormat()
-    };
-
-    public static MeasureDefinition AvgCycleTimeDays() => new()
-    {
-        CubeMember = "EventsView.avgCycleTimeDays",
-        Label = "Average Cycle Time (Days)",
-        Type = MeasureType.Average.GetDefaultType(),
-        Format = MeasureType.Average.GetDefaultFormat()
     };
 
     // Rate KPI measures
@@ -137,14 +105,5 @@ public static class EventMeasures
         Label = "Reject Rate (%)",
         Type = MeasureType.Rate.GetDefaultType(),
         Format = MeasureType.Rate.GetDefaultFormat()
-    };
-
-    // Additional aggregate measures
-    public static MeasureDefinition LastRoundNumber() => new()
-    {
-        CubeMember = "EventsView.lastRoundNumber",
-        Label = "Last Round Number",
-        Type = MeasureType.Aggregate.GetDefaultType(),
-        Format = MeasureType.Aggregate.GetDefaultFormat()
     };
 }
