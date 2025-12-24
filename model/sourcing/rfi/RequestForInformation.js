@@ -28,7 +28,7 @@ cube(`RequestForInformation`, {
       relationship: `hasMany`
     },
     Quotation: {
-      sql: `${CUBE}.id = ${Quotation}.request_for_id AND ${Quotation}.domain = 'request_for_information'`,
+      sql: `${CUBE}.id = ${Quotation}.request_for_id`,
       relationship: `hasMany`
     },
     StateRequestForInformation: {

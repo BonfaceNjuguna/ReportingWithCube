@@ -38,7 +38,7 @@ cube(`MaterialRfq`, {
       relationship: `hasMany`
     },
     Quotation: {
-      sql: `${CUBE}.id = ${Quotation}.request_for_id AND ${Quotation}.domain = 'material_rfq'`,
+      sql: `${CUBE}.id = ${Quotation}.request_for_id`,
       relationship: `hasMany`
     },
     StateMaterialRfq: {

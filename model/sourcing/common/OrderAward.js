@@ -6,7 +6,6 @@ cube(`OrderAward`, {
       MIN(o.created_at) AS awarded_at
     FROM buyer_d_fdw_order_service."order" o
     JOIN buyer_d_fdw_rfq_service.quotation q ON o.source_document_id = q.id
-    WHERE q.domain = 'material_rfq'
     GROUP BY 1
   `,
 
