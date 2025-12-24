@@ -34,6 +34,10 @@ cube(`RequestForInformation`, {
     StateRequestForInformation: {
       sql: `${CUBE}.current_state_id = ${StateRequestForInformation}.id`,
       relationship: `belongsTo`
+    },
+    StateRequestForToSupplierRfi: {
+      relationship: `belongsTo`,
+      sql: `${RequestForToSupplierRfi}.current_state_id = ${StateRequestForToSupplierRfi}.id`
     }
   },
 
@@ -41,6 +45,76 @@ cube(`RequestForInformation`, {
     count: {
       type: `count`,
       drillMembers: [number, name, createdAt, createdBy]
+    },
+
+    // Supplier KPIs
+    invitedSuppliersCount: {
+      sql: `${RequestForToSupplierRfi.id}`,
+      type: `countDistinct`,
+      filters: [{ sql: `${RequestForToSupplierRfi}.is_active = true` }],
+      title: `Invited Suppliers`
+    },
+
+    viewedSuppliersCount: {
+      sql: `${RequestForToSupplierRfi.id}`,
+      type: `countDistinct`,
+      filters: [{ sql: `${StateRequestForToSupplierRfi}.name = 'Seen'` }],
+      title: `Viewed Suppliers`
+    },
+
+    offeredSuppliersCount: {
+      sql: `${RequestForToSupplierRfi.id}`,
+      type: `countDistinct`,
+      filters: [{ sql: `${StateRequestForToSupplierRfi}.name = 'SupplierReplySubmitted'` }],
+      title: `Offered Suppliers`
+    },
+
+    rejectedSuppliersCount: {
+      sql: `${RequestForToSupplierRfi.id}`,
+      type: `countDistinct`,
+      filters: [{ sql: `${StateRequestForToSupplierRfi}.name = 'Rejected'` }],
+      title: `Rejected Suppliers`
+    },
+
+    // Rate KPIs
+    responseRate: {
+      sql: `
+        CASE
+          WHEN ${invitedSuppliersCount} > 0
+          THEN ${viewedSuppliersCount}::FLOAT / ${invitedSuppliersCount}
+          ELSE NULL
+        END
+      `,
+      type: `number`,
+      format: `percent`,
+      title: `Response Rate`
+    },
+
+    rejectRate: {
+      sql: `
+        CASE
+          WHEN ${invitedSuppliersCount} > 0
+          THEN ${rejectedSuppliersCount}::FLOAT / ${invitedSuppliersCount}
+          ELSE NULL
+        END
+      `,
+      type: `number`,
+      format: `percent`,
+      title: `Reject Rate`
+    },
+
+    // Time-based KPIs
+    offerPeriodDays: {
+      sql: `
+        CASE
+          WHEN ${CUBE.startedDate} IS NOT NULL
+           AND ${CUBE.deadline} IS NOT NULL
+          THEN EXTRACT(EPOCH FROM (${CUBE.deadline} - ${CUBE.startedDate})) / 86400
+          ELSE NULL
+        END
+      `,
+      type: `avg`,
+      title: `Offer Period (Days)`
     }
   },
 

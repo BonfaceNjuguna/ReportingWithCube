@@ -1,6 +1,3 @@
-// Cube.js schema for Material RFQ (main events table)
-// Maps to: buyer_d_fdw_rfq_service.material_rfq
-
 cube(`MaterialRfq`, {
   sql: `SELECT * FROM buyer_d_fdw_rfq_service.material_rfq`,
   
@@ -47,6 +44,14 @@ cube(`MaterialRfq`, {
     StateMaterialRfq: {
       sql: `${CUBE}.current_state_id = ${StateMaterialRfq}.id`,
       relationship: `belongsTo`
+    },
+    StateRequestForToSupplierMaterialRfq: {
+      relationship: `belongsTo`,
+      sql: `${RequestForToSupplierMaterialRfq}.current_state_id = ${StateRequestForToSupplierMaterialRfq}.id`
+    },
+    OrderAward: {
+      relationship: `belongsTo`,
+      sql: `${CUBE}.id = ${OrderAward}.rfq_id`
     }
   },
 
@@ -84,11 +89,149 @@ cube(`MaterialRfq`, {
       title: `Average Cycle Time (Days)`,
       description: `Time from event start to completion`
     },
-    
-    // Count of invited suppliers (via join)
+
+    // Supplier KPIs
     invitedSuppliersCount: {
-      sql: `${RequestForToSupplierMaterialRfq.count}`,
-      type: `number`
+      sql: `${RequestForToSupplierMaterialRfq.id}`,
+      type: `countDistinct`,
+      title: `Invited Suppliers`
+    },
+
+    viewedSuppliersCount: {
+      sql: `${RequestForToSupplierMaterialRfq.id}`,
+      type: `countDistinct`,
+      filters: [{ sql: `${StateRequestForToSupplierMaterialRfq}.name = 'Seen'` }],
+      title: `Viewed Suppliers`
+    },
+
+    offeredSuppliersCount: {
+      sql: `${RequestForToSupplierMaterialRfq.id}`,
+      type: `countDistinct`,
+      filters: [{ sql: `${StateRequestForToSupplierMaterialRfq}.name = 'SupplierReplySubmitted'` }],
+      title: `Offered Suppliers`
+    },
+
+    rejectedSuppliersCount: {
+      sql: `${RequestForToSupplierMaterialRfq.id}`,
+      type: `countDistinct`,
+      filters: [{ sql: `${StateRequestForToSupplierMaterialRfq}.name = 'Rejected'` }],
+      title: `Rejected Suppliers`
+    },
+
+    // Quotation KPIs
+    bestQuotationTotal: {
+      sql: `${Quotation.totalPrice}`,
+      type: `min`,
+      format: `currency`,
+      title: `Best Quotation (Lowest)`,
+      filters: [
+        { sql: `${Quotation}.is_opened = true` },
+        { sql: `${Quotation}.round_number = ${CUBE.roundNumber}` },
+        { sql: `${Quotation}.version_number = 0` }
+      ]
+    },
+
+    quotationTotal: {
+      sql: `${Quotation.totalPrice}`,
+      type: `sum`,
+      format: `currency`,
+      title: `Quotation Total`,
+      filters: [
+        { sql: `${Quotation}.is_opened = true` },
+        { sql: `${Quotation}.round_number = ${CUBE.roundNumber}` },
+        { sql: `${Quotation}.version_number = 0` }
+      ]
+    },
+
+    quotationCountValid: {
+      sql: `${Quotation.id}`,
+      type: `countDistinct`,
+      title: `Valid Quotations Count`,
+      filters: [
+        { sql: `${Quotation}.is_opened = true` },
+        { sql: `${Quotation}.round_number = ${CUBE.roundNumber}` },
+        { sql: `${Quotation}.version_number = 0` }
+      ]
+    },
+
+    quotationTotalAvg: {
+      sql: `
+        CASE
+          WHEN ${quotationCountValid} > 0
+          THEN ${quotationTotal}::FLOAT / ${quotationCountValid}
+          ELSE NULL
+        END
+      `,
+      type: `number`,
+      format: `currency`,
+      title: `Average Quotation Total`
+    },
+
+    // Rate KPIs
+    quotationRate: {
+      sql: `
+        CASE
+          WHEN ${invitedSuppliersCount} > 0
+          THEN ${offeredSuppliersCount}::FLOAT / ${invitedSuppliersCount}
+          ELSE NULL
+        END
+      `,
+      type: `number`,
+      format: `percent`,
+      title: `Quotation Rate`
+    },
+
+    responseRate: {
+      sql: `
+        CASE
+          WHEN ${invitedSuppliersCount} > 0
+          THEN ${viewedSuppliersCount}::FLOAT / ${invitedSuppliersCount}
+          ELSE NULL
+        END
+      `,
+      type: `number`,
+      format: `percent`,
+      title: `Response Rate`
+    },
+
+    rejectRate: {
+      sql: `
+        CASE
+          WHEN ${invitedSuppliersCount} > 0
+          THEN ${rejectedSuppliersCount}::FLOAT / ${invitedSuppliersCount}
+          ELSE NULL
+        END
+      `,
+      type: `number`,
+      format: `percent`,
+      title: `Reject Rate`
+    },
+
+    // Time-based KPIs
+    offerPeriodDays: {
+      sql: `
+        CASE
+          WHEN ${CUBE.startedDate} IS NOT NULL
+           AND ${CUBE.deadline} IS NOT NULL
+          THEN EXTRACT(EPOCH FROM (${CUBE.deadline} - ${CUBE.startedDate})) / 86400
+          ELSE NULL
+        END
+      `,
+      type: `avg`,
+      title: `Offer Period (Days)`
+    },
+
+    cycleTimeDays: {
+      sql: `
+        CASE
+          WHEN ${CUBE.startedDate} IS NOT NULL
+           AND ${OrderAward.firstOrderAt} IS NOT NULL
+          THEN EXTRACT(EPOCH FROM (${OrderAward.firstOrderAt} - ${CUBE.startedDate})) / 86400
+          ELSE NULL
+        END
+      `,
+      type: `avg`,
+      title: `Cycle Time (Days)`
     }
   },
 
