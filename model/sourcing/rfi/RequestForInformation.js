@@ -19,6 +19,22 @@ cube(`RequestForInformation`, {
       refreshKey: {
         every: `1 hour`
       }
+    },
+    byCreatorMonthlyKpis: {
+      measures: [
+        RequestForInformation.count,
+        RequestForInformation.invitedSuppliersCount,
+        RequestForInformation.offeredSuppliersCount
+      ],
+      dimensions: [
+        RequestForInformation.domain,
+        RequestForInformation.stateName
+      ],
+      timeDimension: RequestForInformation.createdAt,
+      granularity: `month`,
+      refreshKey: {
+        every: `1 hour`
+      }
     }
   },
 
@@ -125,6 +141,12 @@ cube(`RequestForInformation`, {
       primaryKey: true
     },
     
+    eventType: {
+      sql: `'RFI'`,
+      type: `string`,
+      title: `Event Type`
+    },
+    
     number: {
       sql: `"number"`,
       type: `string`,
@@ -146,6 +168,12 @@ cube(`RequestForInformation`, {
       sql: `current_state_id`,
       type: `string`,
       title: `Status`
+    },
+    
+    stateName: {
+      sql: `${StateRequestForInformation.name}`,
+      type: `string`,
+      title: `Status Name`
     },
     
     domain: {
@@ -201,6 +229,12 @@ cube(`RequestForInformation`, {
       sql: `created_by::jsonb->>'UserId'`,
       type: `string`,
       title: `Created By User ID`
+    },
+    
+    creatorDepartment: {
+      sql: `created_by::jsonb->>'Department'`,
+      type: `string`,
+      title: `Creator Department`
     },
     
     updatedBy: {

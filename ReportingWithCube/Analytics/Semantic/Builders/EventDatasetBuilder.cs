@@ -28,8 +28,8 @@ public class EventDatasetBuilder : IDatasetBuilder
             Filters = BuildFilters(eventType),
             Security = new SecurityPolicy
             {
-                TenantFilterMember = "EventsView.tenant",
-                UserFilterMember = "EventsView.createdBy",
+                TenantFilterMember = GetCubeName(eventType) + ".tenant",
+                UserFilterMember = GetCubeName(eventType) + ".createdBy",
                 MaxLimit = 1000,
                 MaxDateRangeDays = 730
             }
@@ -122,6 +122,14 @@ public class EventDatasetBuilder : IDatasetBuilder
         return filters;
     }
 
+    private string GetCubeName(EventType eventType) => eventType switch
+    {
+        EventType.RFQ => "EventsRfqView",
+        EventType.RFI => "EventsRfiView",
+        EventType.All => "EventsRfqView", // Default to RFQ for unified view
+        _ => "EventsRfqView"
+    };
+
     private void AddIfApplicable<T>(
         Dictionary<string, T> collection,
         string key,
@@ -132,6 +140,18 @@ public class EventDatasetBuilder : IDatasetBuilder
         var applicableTypes = definition.GetType()
             .GetProperty("ApplicableEventTypes")
             ?.GetValue(definition) as string[];
+
+        // Update CubeMember to use correct cube name
+        var cubeMemberProp = definition.GetType().GetProperty("CubeMember");
+        if (cubeMemberProp != null)
+        {
+            var cubeMember = cubeMemberProp.GetValue(definition) as string;
+            if (cubeMember != null && cubeMember.StartsWith("EventsView."))
+            {
+                var memberName = cubeMember.Substring("EventsView.".Length);
+                cubeMemberProp.SetValue(definition, GetCubeName(eventType) + "." + memberName);
+            }
+        }
 
         // If no restrictions, or if current event type is in the list, add it
         if (applicableTypes == null || applicableTypes.Length == 0)

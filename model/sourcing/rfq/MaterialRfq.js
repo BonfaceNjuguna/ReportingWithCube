@@ -25,6 +25,22 @@ cube(`MaterialRfq`, {
       dimensions: [MaterialRfq.createdBy],
       timeDimension: MaterialRfq.createdAt,
       granularity: `month`
+    },
+    byCreatorMonthlyKpis: {
+      measures: [
+        MaterialRfq.count,
+        MaterialRfq.invitedSuppliersCount,
+        MaterialRfq.offeredSuppliersCount
+      ],
+      dimensions: [
+        MaterialRfq.purchaseOrganisation,
+        MaterialRfq.stateName
+      ],
+      timeDimension: MaterialRfq.createdAt,
+      granularity: `month`,
+      refreshKey: {
+        every: `1 hour`
+      }
     }
   },
 
@@ -94,6 +110,7 @@ cube(`MaterialRfq`, {
     invitedSuppliersCount: {
       sql: `${RequestForToSupplierMaterialRfq.id}`,
       type: `countDistinct`,
+      filters: [{ sql: `${RequestForToSupplierMaterialRfq}.is_active = true` }],
       title: `Invited Suppliers`
     },
 
@@ -222,15 +239,8 @@ cube(`MaterialRfq`, {
     },
 
     cycleTimeDays: {
-      sql: `
-        CASE
-          WHEN ${CUBE.startedDate} IS NOT NULL
-           AND ${OrderAward.firstOrderAt} IS NOT NULL
-          THEN EXTRACT(EPOCH FROM (${OrderAward.firstOrderAt} - ${CUBE.startedDate})) / 86400
-          ELSE NULL
-        END
-      `,
-      type: `avg`,
+      sql: `AVG(ROUND(EXTRACT(EPOCH FROM (${OrderAward.awardedAtTime} - ${CUBE}.started_date)) / 86400))::INTEGER`,
+      type: `number`,
       title: `Cycle Time (Days)`
     }
   },
@@ -240,6 +250,12 @@ cube(`MaterialRfq`, {
       sql: `id`,
       type: `string`,
       primaryKey: true
+    },
+    
+    eventType: {
+      sql: `'RFQ'`,
+      type: `string`,
+      title: `Event Type`
     },
     
     number: {
@@ -263,6 +279,12 @@ cube(`MaterialRfq`, {
       sql: `current_state_id`,
       type: `string`,
       title: `Status`
+    },
+    
+    stateName: {
+      sql: `${StateMaterialRfq.name}`,
+      type: `string`,
+      title: `Status Name`
     },
     
     // Organization fields
@@ -338,6 +360,12 @@ cube(`MaterialRfq`, {
       sql: `created_by::jsonb->>'UserId'`,
       type: `string`,
       title: `Created By User ID`
+    },
+    
+    creatorDepartment: {
+      sql: `created_by::jsonb->>'Department'`,
+      type: `string`,
+      title: `Creator Department`
     },
     
     updatedBy: {
@@ -417,6 +445,12 @@ cube(`MaterialRfq`, {
       sql: `replies_opened_by::jsonb->>'UserId'`,
       type: `string`,
       title: `Replies Opened By User ID`
+    },
+    
+    awardedAt: {
+      sql: `${OrderAward.awardedAtTime}`,
+      type: `time`,
+      title: `Award Decision Date`
     },
     
     // Boolean flags
