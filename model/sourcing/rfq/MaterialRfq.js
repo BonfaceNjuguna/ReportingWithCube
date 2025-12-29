@@ -89,7 +89,7 @@ cube(`MaterialRfq`, {
       format: `currency`
     },
     
-    // KPI: Offer Period (days between created_at and deadline)
+    // Offer Period (days between created_at and deadline)
     avgOfferPeriod: {
       sql: `EXTRACT(EPOCH FROM (${CUBE}.deadline - ${CUBE}.created_at))/86400`,
       type: `avg`,
@@ -97,7 +97,7 @@ cube(`MaterialRfq`, {
       title: `Average Offer Period (Days)`
     },
     
-    // KPI: Cycle Time (days between started_date and first order created)
+    // Cycle Time (days between started_date and first order created)
     avgCycleTime: {
       sql: `EXTRACT(EPOCH FROM (${CUBE}.updated_at - ${CUBE}.started_date))/86400`,
       type: `avg`,
@@ -144,7 +144,14 @@ cube(`MaterialRfq`, {
       filters: [
         { sql: `${Quotation}.is_opened = true` },
         { sql: `${Quotation}.round_number = ${CUBE.roundNumber}` },
-        { sql: `${Quotation}.version_number = 0` }
+        { sql: `${Quotation}.version_number = 0` },
+        { sql: `NOT EXISTS (
+          SELECT 1 
+          FROM buyer_d_fdw_rfq_service.quotation_document_item qdi
+          WHERE qdi.root_id = ${Quotation}.id 
+            AND qdi.unit_price <= 0
+            AND qdi.item_type <> 3
+        )` }
       ]
     },
 

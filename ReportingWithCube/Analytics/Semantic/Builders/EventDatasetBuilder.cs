@@ -126,8 +126,8 @@ public class EventDatasetBuilder : IDatasetBuilder
     {
         EventType.RFQ => "EventsRfqView",
         EventType.RFI => "EventsRfiView",
-        EventType.All => "EventsRfqView", // Default to RFQ for unified view
-        _ => "EventsRfqView"
+        EventType.All => "EventsView", // Unified view for combined RFQ+RFI queries
+        _ => "EventsView"
     };
 
     private void AddIfApplicable<T>(

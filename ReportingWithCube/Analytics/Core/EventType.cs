@@ -20,8 +20,8 @@ public static class EventTypeMetadata
     public static string GetCubePrefix(this EventType eventType) => eventType switch
     {
         EventType.All => "EventsView",
-        EventType.RFQ => "EventsView",
-        EventType.RFI => "EventsView",
+        EventType.RFQ => "EventsRfqView",
+        EventType.RFI => "EventsRfiView",
         _ => "EventsView"
     };
     

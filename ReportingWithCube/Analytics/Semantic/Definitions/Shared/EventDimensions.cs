@@ -7,7 +7,7 @@ public static class EventDimensions
     // Event identification dimensions
     public static DimensionDefinition EventNumber() => new()
     {
-        CubeMember = "EventsView.number",
+        CubeMember = "EventsView.eventNumber",
         Label = "Event No",
         Type = DimensionType.EventIdentification.GetDefaultType()
     };
