@@ -155,48 +155,42 @@ cube(`MaterialRfq`, {
       ]
     },
 
-    quotationTotal: {
-      sql: `${Quotation.totalPrice}`,
-      type: `sum`,
+    quotationTotalValid: {
+      sql: `(
+        SELECT SUM(q.total_price)
+        FROM buyer_d_fdw_rfq_service.quotation q
+        JOIN buyer_d_fdw_rfq_service.state_quotation sq ON q.current_state_id = sq.id
+        WHERE q.request_for_id = ${CUBE}.id
+          AND q.is_opened = true
+          AND q.round_number = ${CUBE.roundNumber}
+          AND q.version_number = 0
+          AND sq.name = 'Submitted'
+      )`,
+      type: `number`,
       format: `currency`,
-      title: `Quotation Total`,
-      filters: [
-        { sql: `${Quotation}.is_opened = true` },
-        { sql: `${Quotation}.round_number = ${CUBE.roundNumber}` },
-        { sql: `${Quotation}.version_number = 0` }
-      ]
+      title: `Valid Quotation Total`
     },
 
     quotationCountValid: {
-      sql: `${Quotation.id}`,
-      type: `countDistinct`,
-      title: `Valid Quotations Count`,
-      filters: [
-        { sql: `${Quotation}.is_opened = true` },
-        { sql: `${Quotation}.round_number = ${CUBE.roundNumber}` },
-        { sql: `${Quotation}.version_number = 0` }
-      ]
-    },
-
-    quotationCount: {
       sql: `(
         SELECT COUNT(*)
         FROM buyer_d_fdw_rfq_service.quotation q
         JOIN buyer_d_fdw_rfq_service.state_quotation sq ON q.current_state_id = sq.id
         WHERE q.request_for_id = ${CUBE}.id
           AND q.is_opened = true
+          AND q.round_number = ${CUBE.roundNumber}
           AND q.version_number = 0
           AND sq.name = 'Submitted'
       )`,
       type: `number`,
-      title: `Number of Quotations`
+      title: `Valid Quotations Count`
     },
 
     quotationTotalAvg: {
       sql: `
         CASE
           WHEN ${quotationCountValid} > 0
-          THEN ${quotationTotal}::FLOAT / ${quotationCountValid}
+          THEN ${quotationTotalValid}::FLOAT / ${quotationCountValid}
           ELSE NULL
         END
       `,
@@ -210,7 +204,7 @@ cube(`MaterialRfq`, {
       sql: `
         CASE
           WHEN ${invitedSuppliersCount} > 0
-          THEN ${quotationCount}::FLOAT / ${invitedSuppliersCount}
+          THEN (${quotationCountValid}::FLOAT / ${invitedSuppliersCount}) * 100
           ELSE NULL
         END
       `,
@@ -223,7 +217,7 @@ cube(`MaterialRfq`, {
       sql: `
         CASE
           WHEN ${invitedSuppliersCount} > 0
-          THEN ${rejectedSuppliersCount}::FLOAT / ${invitedSuppliersCount}
+          THEN (${rejectedSuppliersCount}::FLOAT / ${invitedSuppliersCount}) * 100
           ELSE NULL
         END
       `,

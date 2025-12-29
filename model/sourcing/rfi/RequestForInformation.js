@@ -92,12 +92,24 @@ cube(`RequestForInformation`, {
       title: `Rejected Suppliers`
     },
 
+    answerCount: {
+      sql: `(
+        SELECT COUNT(*)
+        FROM buyer_d_fdw_rfq_service.questionnaire_answer_request_for_information qa
+        JOIN buyer_d_fdw_rfq_service.state_questionnaire_answer_request_for_information sa ON qa.current_state_id = sa.id
+        WHERE qa.request_for_id = ${CUBE}.id
+          AND sa.name = 'Submitted'
+      )`,
+      type: `number`,
+      title: `Answer Count`
+    },
+
     // Rate KPIs
     responseRate: {
       sql: `
         CASE
           WHEN ${invitedSuppliersCount} > 0
-          THEN ${viewedSuppliersCount}::FLOAT / ${invitedSuppliersCount}
+          THEN (${answerCount}::FLOAT / ${invitedSuppliersCount}) * 100
           ELSE NULL
         END
       `,
@@ -110,7 +122,7 @@ cube(`RequestForInformation`, {
       sql: `
         CASE
           WHEN ${invitedSuppliersCount} > 0
-          THEN ${rejectedSuppliersCount}::FLOAT / ${invitedSuppliersCount}
+          THEN (${rejectedSuppliersCount}::FLOAT / ${invitedSuppliersCount}) * 100
           ELSE NULL
         END
       `,
