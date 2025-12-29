@@ -163,7 +163,14 @@ cube(`MaterialRfq`, {
       filters: [
         { sql: `${Quotation}.is_opened = true` },
         { sql: `${Quotation}.round_number = ${CUBE.roundNumber}` },
-        { sql: `${Quotation}.version_number = 0` }
+        { sql: `${Quotation}.version_number = 0` },
+        { sql: `NOT EXISTS (
+          SELECT 1 
+          FROM buyer_d_fdw_rfq_service.quotation_document_item qdi
+          WHERE qdi.root_id = ${Quotation}.id 
+            AND qdi.unit_price <= 0
+            AND qdi.item_type <> 3
+        )` }
       ]
     },
 
@@ -174,7 +181,14 @@ cube(`MaterialRfq`, {
       filters: [
         { sql: `${Quotation}.is_opened = true` },
         { sql: `${Quotation}.round_number = ${CUBE.roundNumber}` },
-        { sql: `${Quotation}.version_number = 0` }
+        { sql: `${Quotation}.version_number = 0` },
+        { sql: `NOT EXISTS (
+          SELECT 1 
+          FROM buyer_d_fdw_rfq_service.quotation_document_item qdi
+          WHERE qdi.root_id = ${Quotation}.id 
+            AND qdi.unit_price <= 0
+            AND qdi.item_type <> 3
+        )` }
       ]
     },
 
