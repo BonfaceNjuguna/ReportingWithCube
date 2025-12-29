@@ -101,7 +101,14 @@ cube('EventsView', {
              WHERE q.request_for_id = ${CUBE}.id 
                AND q.is_opened = true 
                AND q.round_number = ${CUBE}.round_number 
-               AND q.version_number = 0)
+               AND q.version_number = 0
+               AND NOT EXISTS (
+                 SELECT 1 
+                 FROM buyer_d_fdw_rfq_service.quotation_document_item qdi
+                 WHERE qdi.root_id = q.id 
+                   AND qdi.unit_price <= 0
+                   AND qdi.item_type <> 3
+               ))
           ELSE NULL
         END
       `,
