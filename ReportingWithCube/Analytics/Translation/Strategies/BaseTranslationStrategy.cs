@@ -89,7 +89,6 @@ public abstract class BaseTranslationStrategy : ITranslationStrategy
             }
         }
 
-        // 🔐 SECURITY: Inject mandatory filters (tenant, user, etc.)
         if (dataset.Security != null && user != null)
         {
             InjectSecurityFilters(filters, dataset, user);
@@ -282,7 +281,7 @@ public abstract class BaseTranslationStrategy : ITranslationStrategy
 
     protected string GetUserId(ClaimsPrincipal user)
     {
-        return user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+        return user.FindFirst(ClaimTypes.NameIdentifier)?.Value 
                ?? user.FindFirst("sub")?.Value 
                ?? string.Empty;
     }

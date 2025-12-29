@@ -19,6 +19,22 @@ cube(`RequestForInformation`, {
       refreshKey: {
         every: `1 hour`
       }
+    },
+    byCreatorMonthlyKpis: {
+      measures: [
+        RequestForInformation.count,
+        RequestForInformation.invitedSuppliersCount,
+        RequestForInformation.offeredSuppliersCount
+      ],
+      dimensions: [
+        RequestForInformation.domain,
+        RequestForInformation.stateName
+      ],
+      timeDimension: RequestForInformation.createdAt,
+      granularity: `month`,
+      refreshKey: {
+        every: `1 hour`
+      }
     }
   },
 
@@ -28,12 +44,16 @@ cube(`RequestForInformation`, {
       relationship: `hasMany`
     },
     Quotation: {
-      sql: `${CUBE}.id = ${Quotation}.request_for_id AND ${Quotation}.domain = 'request_for_information'`,
+      sql: `${CUBE}.id = ${Quotation}.request_for_id`,
       relationship: `hasMany`
     },
     StateRequestForInformation: {
       sql: `${CUBE}.current_state_id = ${StateRequestForInformation}.id`,
       relationship: `belongsTo`
+    },
+    StateRequestForToSupplierRfi: {
+      relationship: `belongsTo`,
+      sql: `${RequestForToSupplierRfi}.current_state_id = ${StateRequestForToSupplierRfi}.id`
     }
   },
 
@@ -41,6 +61,76 @@ cube(`RequestForInformation`, {
     count: {
       type: `count`,
       drillMembers: [number, name, createdAt, createdBy]
+    },
+
+    // Supplier KPIs
+    invitedSuppliersCount: {
+      sql: `${RequestForToSupplierRfi.id}`,
+      type: `countDistinct`,
+      filters: [{ sql: `${RequestForToSupplierRfi}.is_active = true` }],
+      title: `Invited Suppliers`
+    },
+
+    viewedSuppliersCount: {
+      sql: `${RequestForToSupplierRfi.id}`,
+      type: `countDistinct`,
+      filters: [{ sql: `${StateRequestForToSupplierRfi}.name = 'Seen'` }],
+      title: `Viewed Suppliers`
+    },
+
+    offeredSuppliersCount: {
+      sql: `${RequestForToSupplierRfi.id}`,
+      type: `countDistinct`,
+      filters: [{ sql: `${StateRequestForToSupplierRfi}.name = 'SupplierReplySubmitted'` }],
+      title: `Offered Suppliers`
+    },
+
+    rejectedSuppliersCount: {
+      sql: `${RequestForToSupplierRfi.id}`,
+      type: `countDistinct`,
+      filters: [{ sql: `${StateRequestForToSupplierRfi}.name = 'Rejected'` }],
+      title: `Rejected Suppliers`
+    },
+
+    // Rate KPIs
+    responseRate: {
+      sql: `
+        CASE
+          WHEN ${invitedSuppliersCount} > 0
+          THEN ${viewedSuppliersCount}::FLOAT / ${invitedSuppliersCount}
+          ELSE NULL
+        END
+      `,
+      type: `number`,
+      format: `percent`,
+      title: `Response Rate`
+    },
+
+    rejectRate: {
+      sql: `
+        CASE
+          WHEN ${invitedSuppliersCount} > 0
+          THEN ${rejectedSuppliersCount}::FLOAT / ${invitedSuppliersCount}
+          ELSE NULL
+        END
+      `,
+      type: `number`,
+      format: `percent`,
+      title: `Reject Rate`
+    },
+
+    // Time-based KPIs
+    offerPeriodDays: {
+      sql: `
+        CASE
+          WHEN ${CUBE.startedDate} IS NOT NULL
+           AND ${CUBE.deadline} IS NOT NULL
+          THEN EXTRACT(EPOCH FROM (${CUBE.deadline} - ${CUBE.startedDate})) / 86400
+          ELSE NULL
+        END
+      `,
+      type: `avg`,
+      title: `Offer Period (Days)`
     }
   },
 
@@ -49,6 +139,12 @@ cube(`RequestForInformation`, {
       sql: `id`,
       type: `string`,
       primaryKey: true
+    },
+    
+    eventType: {
+      sql: `'RFI'`,
+      type: `string`,
+      title: `Event Type`
     },
     
     number: {
@@ -72,6 +168,12 @@ cube(`RequestForInformation`, {
       sql: `current_state_id`,
       type: `string`,
       title: `Status`
+    },
+    
+    stateName: {
+      sql: `${StateRequestForInformation.name}`,
+      type: `string`,
+      title: `Status Name`
     },
     
     domain: {
@@ -127,6 +229,12 @@ cube(`RequestForInformation`, {
       sql: `created_by::jsonb->>'UserId'`,
       type: `string`,
       title: `Created By User ID`
+    },
+    
+    creatorDepartment: {
+      sql: `created_by::jsonb->>'Department'`,
+      type: `string`,
+      title: `Creator Department`
     },
     
     updatedBy: {
