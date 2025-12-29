@@ -181,14 +181,16 @@ cube('EventsView', {
 
     offerPeriodDays: {
       sql: `
-        CASE
-          WHEN ${CUBE}.started_date IS NOT NULL
-           AND ${CUBE}.deadline IS NOT NULL
-          THEN EXTRACT(EPOCH FROM (${CUBE}.deadline - ${CUBE}.started_date)) / 86400
-          ELSE NULL
-        END
+        AVG(
+          CASE
+            WHEN ${CUBE}.started_date IS NOT NULL
+             AND ${CUBE}.deadline IS NOT NULL
+            THEN ROUND(EXTRACT(EPOCH FROM (${CUBE}.deadline - ${CUBE}.started_date)) / 86400)
+            ELSE NULL
+          END
+        )::INTEGER
       `,
-      type: `avg`,
+      type: `number`,
       title: `Offer Period (Days)`
     },
 

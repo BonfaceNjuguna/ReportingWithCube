@@ -248,14 +248,16 @@ cube(`MaterialRfq`, {
     // Time-based KPIs
     offerPeriodDays: {
       sql: `
-        CASE
-          WHEN ${CUBE.startedDate} IS NOT NULL
-           AND ${CUBE.deadline} IS NOT NULL
-          THEN EXTRACT(EPOCH FROM (${CUBE.deadline} - ${CUBE.startedDate})) / 86400
-          ELSE NULL
-        END
+        AVG(
+          CASE
+            WHEN ${CUBE.startedDate} IS NOT NULL
+             AND ${CUBE.deadline} IS NOT NULL
+            THEN ROUND(EXTRACT(EPOCH FROM (${CUBE.deadline} - ${CUBE.startedDate})) / 86400)
+            ELSE NULL
+          END
+        )::INTEGER
       `,
-      type: `avg`,
+      type: `number`,
       title: `Offer Period (Days)`
     },
 
