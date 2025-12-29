@@ -53,13 +53,6 @@ cube(`RequestForToSupplierMaterialRfq`, {
       filters: [{ sql: `${CUBE}.is_active = false` }],
       title: `Rejected Suppliers Count`
     },
-    
-    // Count of suppliers who viewed (has_active_status_changed = true)
-    viewedCount: {
-      type: `count`,
-      filters: [{ sql: `${CUBE}.has_active_status_changed = true` }],
-      title: `Suppliers Who Viewed`
-    }
   },
 
   dimensions: {

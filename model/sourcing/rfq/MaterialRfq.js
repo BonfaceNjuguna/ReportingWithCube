@@ -67,7 +67,7 @@ cube(`MaterialRfq`, {
     },
     OrderAward: {
       relationship: `belongsTo`,
-      sql: `${CUBE}.id = ${OrderAward}.rfq_id`
+      sql: `${CUBE}.id = ${OrderAward.rfqId}`
     }
   },
 

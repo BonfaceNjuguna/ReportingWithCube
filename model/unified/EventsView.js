@@ -12,7 +12,7 @@ cube('EventsView', {
       relationship: `belongsTo`
     },
     OrderAward: {
-      sql: `${CUBE}.id = ${OrderAward}.rfqId AND ${CUBE}.event_type = 'RFQ'`,
+      sql: `${CUBE}.id = ${OrderAward.rfqId} AND ${CUBE}.event_type = 'RFQ'`,
       relationship: `belongsTo`
     }
   },
