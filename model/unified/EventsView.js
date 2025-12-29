@@ -126,21 +126,14 @@ cube('EventsView', {
              WHERE q.request_for_id = ${CUBE}.id 
                AND q.is_opened = true 
                AND q.round_number = ${CUBE}.round_number 
-               AND q.version_number = 0
-               AND NOT EXISTS (
-                 SELECT 1 
-                 FROM buyer_d_fdw_rfq_service.quotation_document_item qdi
-                 WHERE qdi.root_id = q.id 
-                   AND qdi.unit_price <= 0
-                   AND qdi.item_type <> 3
-               ))
+               AND q.version_number = 0)
           ELSE NULL
         END
       `,
       type: `sum`,
       format: `currency`,
       title: `Quotation Total`
-    },
+    }, // clarification from Markus - should i exclude quotations with invalid item pricing 
 
     quotationCountValid: {
       sql: `
@@ -151,19 +144,30 @@ cube('EventsView', {
              WHERE q.request_for_id = ${CUBE}.id 
                AND q.is_opened = true 
                AND q.round_number = ${CUBE}.round_number 
-               AND q.version_number = 0
-               AND NOT EXISTS (
-                 SELECT 1 
-                 FROM buyer_d_fdw_rfq_service.quotation_document_item qdi
-                 WHERE qdi.root_id = q.id 
-                   AND qdi.unit_price <= 0
-                   AND qdi.item_type <> 3
-               ))
+               AND q.version_number = 0)
           ELSE NULL
         END
       `,
       type: `sum`,
       title: `Valid Quotations Count`
+    },
+
+    quotationCount: {
+      sql: `
+        CASE 
+          WHEN ${CUBE}.event_type = 'RFQ' THEN 
+            (SELECT COUNT(*) 
+             FROM buyer_d_fdw_rfq_service.quotation q 
+             JOIN buyer_d_fdw_rfq_service.state_quotation sq ON q.current_state_id = sq.id
+             WHERE q.request_for_id = ${CUBE}.id 
+               AND q.is_opened = true 
+               AND q.version_number = 0
+               AND sq.name = 'Submitted')
+          ELSE NULL
+        END
+      `,
+      type: `sum`,
+      title: `Number of Quotations`
     },
 
     quotationTotalAvg: {
@@ -203,8 +207,8 @@ cube('EventsView', {
     quotationRate: {
       sql: `
         CASE
-          WHEN ${invitedSuppliersCount} > 0
-          THEN ${offeredSuppliersCount}::FLOAT / ${invitedSuppliersCount}
+          WHEN ${CUBE}.event_type = 'RFQ' AND ${invitedSuppliersCount} > 0
+          THEN ${quotationCount}::FLOAT / ${invitedSuppliersCount}
           ELSE NULL
         END
       `,
@@ -216,7 +220,7 @@ cube('EventsView', {
     responseRate: {
       sql: `
         CASE
-          WHEN ${invitedSuppliersCount} > 0
+          WHEN ${CUBE}.event_type = 'RFI' AND ${invitedSuppliersCount} > 0
           THEN ${viewedSuppliersCount}::FLOAT / ${invitedSuppliersCount}
           ELSE NULL
         END

@@ -163,14 +163,7 @@ cube(`MaterialRfq`, {
       filters: [
         { sql: `${Quotation}.is_opened = true` },
         { sql: `${Quotation}.round_number = ${CUBE.roundNumber}` },
-        { sql: `${Quotation}.version_number = 0` },
-        { sql: `NOT EXISTS (
-          SELECT 1 
-          FROM buyer_d_fdw_rfq_service.quotation_document_item qdi
-          WHERE qdi.root_id = ${Quotation}.id 
-            AND qdi.unit_price <= 0
-            AND qdi.item_type <> 3
-        )` }
+        { sql: `${Quotation}.version_number = 0` }
       ]
     },
 
@@ -181,15 +174,22 @@ cube(`MaterialRfq`, {
       filters: [
         { sql: `${Quotation}.is_opened = true` },
         { sql: `${Quotation}.round_number = ${CUBE.roundNumber}` },
-        { sql: `${Quotation}.version_number = 0` },
-        { sql: `NOT EXISTS (
-          SELECT 1 
-          FROM buyer_d_fdw_rfq_service.quotation_document_item qdi
-          WHERE qdi.root_id = ${Quotation}.id 
-            AND qdi.unit_price <= 0
-            AND qdi.item_type <> 3
-        )` }
+        { sql: `${Quotation}.version_number = 0` }
       ]
+    },
+
+    quotationCount: {
+      sql: `(
+        SELECT COUNT(*)
+        FROM buyer_d_fdw_rfq_service.quotation q
+        JOIN buyer_d_fdw_rfq_service.state_quotation sq ON q.current_state_id = sq.id
+        WHERE q.request_for_id = ${CUBE}.id
+          AND q.is_opened = true
+          AND q.version_number = 0
+          AND sq.name = 'Submitted'
+      )`,
+      type: `number`,
+      title: `Number of Quotations`
     },
 
     quotationTotalAvg: {
@@ -210,26 +210,13 @@ cube(`MaterialRfq`, {
       sql: `
         CASE
           WHEN ${invitedSuppliersCount} > 0
-          THEN ${offeredSuppliersCount}::FLOAT / ${invitedSuppliersCount}
+          THEN ${quotationCount}::FLOAT / ${invitedSuppliersCount}
           ELSE NULL
         END
       `,
       type: `number`,
       format: `percent`,
       title: `Quotation Rate`
-    },
-
-    responseRate: {
-      sql: `
-        CASE
-          WHEN ${invitedSuppliersCount} > 0
-          THEN ${viewedSuppliersCount}::FLOAT / ${invitedSuppliersCount}
-          ELSE NULL
-        END
-      `,
-      type: `number`,
-      format: `percent`,
-      title: `Response Rate`
     },
 
     rejectRate: {
