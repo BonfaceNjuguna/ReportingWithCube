@@ -207,24 +207,11 @@ Cube.js data models that define how to query the underlying databases via Foreig
 - `StateMaterialRfq.js` - RFQ states
 - `StateRequestForToSupplierMaterialRfq.js` - RFQ supplier states
 
-### 📂 Documentation
-
-- `README.md` - This file
-- `ARCHITECTURE_DOCUMENTATION.md` - Detailed architecture documentation
-- `RATE-CALCULATION-GUIDE.md` - Rate calculation formulas and business logic
-- `example-queries/` - Sample JSON queries for testing
-  - `event-kpi-summary.json` - Event summary with KPIs
-  - `complex-filter-combination.json` - Advanced filter examples
-  - `or-filter-example.json` - OR logic filter examples
-  - `organization-filters-example.json` - Organization filtering
-  - And more...
 
 ### 📂 Configuration
 
 - `docker-compose.yml` - Docker setup for Cube.js server
 - `.env.example` - Environment variable template
-- `appsettings.json` - .NET application configuration
-- `appsettings.Development.json` - Development-specific settings
 
 ## Data Flow Architecture
 
@@ -293,9 +280,9 @@ Cube.js Server
     ▼
 SQL Server Database (via Foreign Data Wrappers)
     │
-    ├─ Query buyer_d_fdw_rfq_service (connects to RFQ microservice DB)
-    ├─ Query buyer_d_fdw_order_service (connects to Order microservice DB)
-    ├─ Query buyer_d_fdw_user_service (connects to User microservice DB)
+    ├─ Query buyer_d_fdw_rfq_service
+    ├─ Query buyer_d_fdw_order_service
+    ├─ Query buyer_d_fdw_user_service
     │
     ▼
 Cube.js Server
