@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import './App.css';
 import { QueryEditor } from './components/QueryEditor';
-import { QueryResult } from './components/QueryResult';
 import { AnalyticsChart } from './components/AnalyticsChart';
 import { useAnalyticsQuery } from './hooks/useAnalyticsQuery';
 import type { AnalyticsQuery, AnalyticsResponse, ColumnMetadata } from './types/analytics';
@@ -22,63 +21,11 @@ const defaultQuery: AnalyticsQuery = {
 };
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'table' | 'chart' | 'details'>('table');
+  const [activeTab, setActiveTab] = useState<'table' | 'chart'>('table');
   const [currentQuery, setCurrentQuery] = useState<AnalyticsQuery>(defaultQuery);
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(100);
   const { data, loading, error, runQuery } = useAnalyticsQuery();
-  const [drillDownPath, setDrillDownPath] = useState<Array<{ field: string; value: string }>>([]);
-  const [showPresets, setShowPresets] = useState(false);
-
-  type InsightPreset = {
-    id: string;
-    title: string;
-    description: string;
-    datasetId?: string;
-    kpis: string[];
-    groupBy: string[];
-    filters?: AnalyticsQuery['filters'];
-    sort?: AnalyticsQuery['sort'];
-  };
-
-  const insightPresets: InsightPreset[] = useMemo(() => [
-    {
-      id: 'cycle-time',
-      title: 'Cycle & offer period trend',
-      description: 'Cycle time and offer period over time, split by RFQ/RFI.',
-      datasetId: 'events',
-      kpis: ['cycle_time_days', 'offer_period_days'],
-      groupBy: ['created_at', 'event_type'],
-      sort: { by: 'created_at', direction: 'desc' }
-    },
-    {
-      id: 'supplier-engagement',
-      title: 'Supplier engagement',
-      description: 'Invited vs viewed vs offered vs rejected suppliers by event type.',
-      datasetId: 'events',
-      kpis: ['invited_suppliers_count', 'viewed_suppliers_count', 'offered_suppliers_count', 'rejected_suppliers_count'],
-      groupBy: ['event_type']
-    },
-    {
-      id: 'conversion-rates',
-      title: 'Conversion & response',
-      description: 'Quotation, response, and reject rates side-by-side per type.',
-      datasetId: 'events',
-      kpis: ['quotation_rate', 'response_rate', 'reject_rate'],
-      groupBy: ['event_type', 'created_at'],
-      sort: { by: 'created_at', direction: 'desc' }
-    },
-    {
-      id: 'rfq-value',
-      title: 'RFQ commercial impact',
-      description: 'Best and average quotation totals, rounds, and opened quotations (RFQ only).',
-      datasetId: 'events',
-      kpis: ['best_quotation_total', 'quotation_total_avg', 'opened_quotations_count', 'last_round_number'],
-      groupBy: ['created_at'],
-      filters: [{ field: 'event_type', operator: 'equals', value: 'RFQ' }],
-      sort: { by: 'created_at', direction: 'desc' }
-    }
-  ], []);
 
   const tableData = useMemo(() => {
     const result = deriveTableData(data);
@@ -96,22 +43,6 @@ function App() {
       }
     };
     runQuery(queryWithPagination);
-  };
-
-  const applyPreset = (preset: InsightPreset) => {
-    const nextQuery: AnalyticsQuery = {
-      ...currentQuery,
-      datasetId: preset.datasetId ?? currentQuery.datasetId,
-      kpis: preset.kpis,
-      groupBy: preset.groupBy,
-      filters: preset.filters ?? [],
-      advancedFilters: [],
-      sort: preset.sort ?? currentQuery.sort,
-      page: { limit: pageSize, offset: 0 }
-    };
-
-    setActiveTab('chart');
-    handleQueryChange(nextQuery);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -139,47 +70,6 @@ function App() {
     runQuery(queryWithPagination);
   };
 
-  const handleDrillDown = (field: string, value: string) => {
-    const newFilter = {
-      field,
-      operator: 'equals' as const,
-      value
-    };
-    
-    const updatedQuery = {
-      ...currentQuery,
-      filters: [...(currentQuery.filters || []), newFilter],
-      page: {
-        limit: pageSize,
-        offset: 0
-      }
-    };
-    
-    setDrillDownPath([...drillDownPath, { field, value }]);
-    setCurrentQuery(updatedQuery);
-    setCurrentPage(0);
-    runQuery(updatedQuery);
-  };
-
-  const handleDrillUp = () => {
-    if (drillDownPath.length === 0) return;
-    
-    const newPath = drillDownPath.slice(0, -1);
-    const updatedQuery = {
-      ...currentQuery,
-      filters: currentQuery.filters?.slice(0, -1) || [],
-      page: {
-        limit: pageSize,
-        offset: 0
-      }
-    };
-    
-    setDrillDownPath(newPath);
-    setCurrentQuery(updatedQuery);
-    setCurrentPage(0);
-    runQuery(updatedQuery);
-  };
-
   // Don't run query on mount - let user build their query first
   // useEffect(() => {
   //   runQuery(defaultQuery);
@@ -196,15 +86,6 @@ function App() {
             </p>
           </div>
           <div className="header-actions">
-            {activeTab === 'chart' && tableData.rows.length === 0 && (
-              <button 
-                className="button button--primary" 
-                type="button"
-                onClick={() => setShowPresets(!showPresets)}
-              >
-                ✨ Quick Start
-              </button>
-            )}
             {tableData.rows.length > 0 && (
               <>
                 <button 
@@ -259,7 +140,7 @@ function App() {
             </div>
 
             <div className="tabs">
-              {['table', 'chart', 'details'].map((tab) => (
+              {['table', 'chart'].map((tab) => (
                 <button
                   key={tab}
                   type="button"
@@ -268,7 +149,6 @@ function App() {
                 >
                   {tab === 'table' && 'Table'}
                   {tab === 'chart' && 'Chart'}
-                  {tab === 'details' && 'Details'}
                 </button>
               ))}
             </div>
@@ -292,60 +172,9 @@ function App() {
                   <div className="empty-state" style={{ padding: '2rem', margin: '1rem 0' }}>
                     <div className="empty-state__icon">📊</div>
                     <h3 className="empty-state__title">No data to visualize</h3>
-                    <p className="empty-state__message" style={{ marginBottom: '1.5rem' }}>
+                    <p className="empty-state__message">
                       Select KPIs and dimensions from the sidebar, then click "Run Query" to see your chart.
                     </p>
-                    <button 
-                      type="button" 
-                      className="button button--secondary"
-                      onClick={() => setShowPresets(!showPresets)}
-                    >
-                      {showPresets ? '✕ Hide' : '✨ Show'} Quick Start Templates
-                    </button>
-                  </div>
-                )}
-
-                {showPresets && (
-                  <div className="panel" style={{ margin: '1rem 0', background: '#f8fafc' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                      <div>
-                        <p className="eyebrow">Quick start</p>
-                        <h3 style={{ margin: '0.25rem 0 0 0', fontSize: '1rem', fontWeight: 600 }}>Pre-configured Views</h3>
-                      </div>
-                      <button 
-                        type="button" 
-                        className="button button--ghost button--small"
-                        onClick={() => setShowPresets(false)}
-                      >
-                        ✕ Close
-                      </button>
-                    </div>
-                    <div className="option-grid">
-                      {insightPresets.map((preset) => (
-                        <div 
-                          key={preset.id}
-                          className="option-card" 
-                          style={{ cursor: 'pointer', flexDirection: 'column' }}
-                          onClick={() => {
-                            applyPreset(preset);
-                            setShowPresets(false);
-                          }}
-                        >
-                          <div className="option-card__title">{preset.title}</div>
-                          <p className="muted" style={{ margin: '0.25rem 0 0 0', fontSize: '0.8125rem', flex: 1 }}>
-                            {preset.description}
-                          </p>
-                          <button
-                            type="button"
-                            className="button button--secondary button--small"
-                            style={{ marginTop: '0.75rem', width: '100%' }}
-                            disabled={loading}
-                          >
-                            Apply
-                          </button>
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 )}
 
@@ -353,14 +182,9 @@ function App() {
                   tableData={tableData}
                   query={currentQuery}
                   loading={loading}
-                  onDrillDown={handleDrillDown}
-                  onDrillUp={handleDrillUp}
-                  drillDownPath={drillDownPath}
                 />
               </>
             )}
-
-            {activeTab === 'details' && <QueryResult data={data} loading={loading} error={error} compact />}
           </div>
         </section>
       </section>

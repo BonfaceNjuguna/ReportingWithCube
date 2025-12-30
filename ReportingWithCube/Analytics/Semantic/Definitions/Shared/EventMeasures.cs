@@ -58,8 +58,8 @@ public static class EventMeasures
 
     public static MeasureDefinition QuotationTotal() => new()
     {
-        CubeMember = "EventsView.quotationTotal",
-        Label = "Quotation Total",
+        CubeMember = "EventsView.quotationTotalValid",
+        Label = "Quotation Total (Valid)",
         Type = MeasureType.Financial.GetDefaultType(),
         Format = MeasureType.Financial.GetDefaultFormat(),
         ApplicableEventTypes = ["RFQ"]

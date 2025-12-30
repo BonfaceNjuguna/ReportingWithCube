@@ -13,7 +13,7 @@ interface QueryEditorProps {
 
 export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEditorProps) {
   const [query, setQuery] = useState<AnalyticsQuery>(initialQuery);
-  const { datasets, schema, loading: schemaLoading, error: schemaError, refreshSchema } = useDatasetSchema(initialQuery.datasetId);
+  const { schema, loading: schemaLoading, error: schemaError, refreshSchema } = useDatasetSchema(initialQuery.datasetId);
   const [selectedDateField, setSelectedDateField] = useState<string>('created_at');
 
   useEffect(() => {
@@ -133,10 +133,6 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
     });
   };
 
-  const updateDataset = (datasetId: string) => {
-    setQuery((prev) => ({ ...prev, datasetId, kpis: [], groupBy: [], filters: [] }));
-  };
-
   const addFilter = () => {
     const defaultField = availableFilters[0]?.id ?? '';
     const defaultOperator = availableFilters[0]?.operators[0] ?? 'equals';
@@ -184,11 +180,6 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
       </div>
 
       <div className="query-summary">
-        <div className="summary-tile">
-          <p className="eyebrow">Dataset</p>
-          <p className="panel__title">{summary.dataset}</p>
-          <p className="muted">{summary.datasetLabel}</p>
-        </div>
         <div className="summary-tile">
           <p className="eyebrow">KPIs</p>
           <p className="panel__title">{summary.kpiCount}</p>
@@ -290,23 +281,6 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
         <p className="muted" style={{ fontSize: '0.8rem', marginTop: '0.5rem', textAlign: 'center' }}>
           Quick filters require Run Query • Columns update automatically
         </p>
-      </div>
-
-      <div className="field">
-        <span className="field__label">Dataset</span>
-        <select
-          className="field__input"
-          value={query.datasetId}
-          onChange={(event) => updateDataset(event.target.value)}
-          disabled={schemaLoading || loading}
-        >
-          {!datasets.length && query.datasetId && <option value={query.datasetId}>{query.datasetId}</option>}
-          {datasets.map((dataset) => (
-            <option value={dataset.id} key={dataset.id}>
-              {dataset.label}
-            </option>
-          ))}
-        </select>
       </div>
 
       <div className="panel__inline">
