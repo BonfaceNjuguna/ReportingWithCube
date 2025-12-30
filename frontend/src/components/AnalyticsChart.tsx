@@ -44,7 +44,7 @@ const COLORS = [
   '#06b6d4', '#6366f1', '#f97316', '#14b8a6', '#a855f7'
 ];
 
-const TOP_N_LIMIT = 10;
+const TOP_N_OPTIONS = [10, 25, 50, 100] as const;
 
 export function AnalyticsChart({ 
   tableData, 
@@ -56,6 +56,7 @@ export function AnalyticsChart({
 }: AnalyticsChartProps) {
   const [chartType, setChartType] = useState<ChartType | null>(null);
   const [showTopN, setShowTopN] = useState(true);
+  const [topNLimit, setTopNLimit] = useState<number>(10);
 
   const recommendedChartType = useMemo((): ChartType => {
     const hasTimeDimension = query.groupBy?.some(dim => 
@@ -147,11 +148,14 @@ export function AnalyticsChart({
     }
 
     let finalData = dataArray;
-    if (showTopN && dataArray.length > TOP_N_LIMIT) {
-      const topN = dataArray.slice(0, TOP_N_LIMIT);
-      const others = dataArray.slice(TOP_N_LIMIT);
+    if (showTopN && dataArray.length > topNLimit) {
+      const topN = dataArray.slice(0, topNLimit);
+      const others = dataArray.slice(topNLimit);
       
-      const othersAggregated: any = { name: 'Others (Aggregated)' };
+      const othersAggregated: any = { 
+        name: `Others (${others.length} items)`,
+        _isOthers: true
+      };
       kpiHeaders.forEach(kpiHeader => {
         othersAggregated[kpiHeader.label] = others.reduce(
           (sum, item) => sum + (item[kpiHeader.label] || 0), 
@@ -163,7 +167,7 @@ export function AnalyticsChart({
     }
 
     return { chartData: finalData, aggregatedData: aggregated };
-  }, [tableData, query, showTopN, matchesField]);
+  }, [tableData, query, showTopN, topNLimit, matchesField]);
 
   // Calculate summary cards
   const summaryCards = useMemo((): SummaryCard[] => {
@@ -218,8 +222,36 @@ export function AnalyticsChart({
     );
   }, [chartData]);
 
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload || !payload.length) return null;
+
+    return (
+      <div style={{
+        background: 'white',
+        padding: '1rem',
+        border: '1px solid #e2e8f0',
+        borderRadius: '0.5rem',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+      }}>
+        <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{label}</p>
+        {payload.map((entry: any, index: number) => {
+          const isPercentage = entry.name.toLowerCase().includes('rate') || entry.name.toLowerCase().includes('%');
+          const formattedValue = isPercentage 
+            ? `${entry.value.toFixed(1)}%` 
+            : entry.value.toLocaleString('en-US', { maximumFractionDigits: 2 });
+          
+          return (
+            <p key={index} style={{ color: entry.color, margin: '0.25rem 0' }}>
+              <span style={{ fontWeight: 500 }}>{entry.name}:</span> {formattedValue}
+            </p>
+          );
+        })}
+      </div>
+    );
+  };
+
   const handleBarClick = (data: any) => {
-    if (data && data._dimensionField) {
+    if (data && data._dimensionField && !data._isOthers) {
       // Find the original dimension ID from query.groupBy that matches this field
       const fieldMapping: Record<string, string[]> = {
         'event_number': ['rfqno', 'number', 'eventno'],
@@ -249,7 +281,7 @@ export function AnalyticsChart({
   };
 
   const handlePieClick = (data: any) => {
-    if (data && data.name) {
+    if (data && data.name && !data._isOthers) {
       const dimensionId = query.groupBy?.[0];
       if (dimensionId) {
         onDrillDown(dimensionId, data.name);
@@ -356,16 +388,35 @@ export function AnalyticsChart({
           )}
         </div>
 
-        {/* Top N Toggle */}
-        {chartData.length > TOP_N_LIMIT && (
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
-            <input
-              type="checkbox"
-              checked={showTopN}
-              onChange={(e) => setShowTopN(e.target.checked)}
-            />
-            Show Top {TOP_N_LIMIT} only
-          </label>
+        {/* Top N Controls */}
+        {aggregatedData.size > 10 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <input
+                type="checkbox"
+                checked={showTopN}
+                onChange={(e) => setShowTopN(e.target.checked)}
+              />
+              Limit to top
+            </label>
+            {showTopN && (
+              <select 
+                value={topNLimit} 
+                onChange={(e) => setTopNLimit(Number(e.target.value))}
+                style={{
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '0.25rem',
+                  border: '1px solid #d1d5db',
+                  fontSize: '0.875rem'
+                }}
+              >
+                {TOP_N_OPTIONS.map(n => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            )}
+            <span className="muted">of {aggregatedData.size} total</span>
+          </div>
         )}
 
         {/* Drill-down Breadcrumbs */}
@@ -413,7 +464,7 @@ export function AnalyticsChart({
                 tick={{ fontSize: 12 }}
               />
               <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
+              <Tooltip content={<CustomTooltip />} />
               <Legend />
               {kpiKeys.map((key, index) => (
                 <Bar
@@ -438,7 +489,7 @@ export function AnalyticsChart({
                 tick={{ fontSize: 12 }}
               />
               <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
+              <Tooltip content={<CustomTooltip />} />
               <Legend />
               {kpiKeys.map((key, index) => (
                 <Line
@@ -471,7 +522,7 @@ export function AnalyticsChart({
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip content={<CustomTooltip />} />
               <Legend />
             </PieChart>
           )}
@@ -487,7 +538,7 @@ export function AnalyticsChart({
                 tick={{ fontSize: 12 }}
               />
               <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
+              <Tooltip content={<CustomTooltip />} />
               <Legend />
               {kpiKeys.map((key, index) => (
                 <Bar
@@ -513,7 +564,7 @@ export function AnalyticsChart({
                 tick={{ fontSize: 12 }}
               />
               <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
+              <Tooltip content={<CustomTooltip />} />
               <Legend />
               {kpiKeys.map((key, index) => (
                 <Bar
@@ -545,7 +596,7 @@ export function AnalyticsChart({
             💡 <strong>Tip:</strong> Click on chart elements to drill down and filter by that value.
           </p>
           <p className="muted">
-            📊 Showing {chartData.length} categories{showTopN && aggregatedData.size > TOP_N_LIMIT ? ` (Top ${TOP_N_LIMIT} + Others)` : ''} • {aggregatedData.size} unique values • Chart type: {activeChartType === recommendedChartType ? `${activeChartType} (recommended)` : activeChartType}
+            📊 Showing {chartData.length} categories{showTopN && aggregatedData.size > topNLimit ? ` (Top ${topNLimit} + Others)` : ''} • {aggregatedData.size} unique values • Chart type: {activeChartType === recommendedChartType ? `${activeChartType} (recommended)` : activeChartType}
           </p>
         </div>
         {aggregatedData.size > chartData.length && (
