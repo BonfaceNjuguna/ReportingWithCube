@@ -13,7 +13,8 @@ cube(`OrderAward`, {
     firstOrderAt: {
       sql: `awarded_at`,
       type: `min`,
-      title: `Awarded At (First Order Date)`
+      title: `Awarded At (First Order Date)`,
+      description: `The date of the first order created for this RFQ`
     }
   },
 
@@ -22,13 +23,15 @@ cube(`OrderAward`, {
       sql: `rfq_id`,
       type: `string`,
       primaryKey: true,
-      title: `RFQ ID`
+      title: `RFQ ID`,
+      description: `The unique identifier of the RFQ`
     },
 
     awardedAtTime: {
       sql: `awarded_at`,
       type: `time`,
-      title: `Awarded At`
+      title: `Awarded At`,
+      description: `Timestamp of the first order award`
     }
   }
 });
