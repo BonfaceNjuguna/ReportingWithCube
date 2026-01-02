@@ -2,6 +2,33 @@
 cube('EventsView', {
   extends: EventBase,
 
+  preAggregations: {
+    main: {
+      measures: [
+        EventsView.count,
+        EventsView.invitedSuppliersCount,
+        EventsView.viewedSuppliersCount,
+        EventsView.offeredSuppliersCount,
+        EventsView.rejectedSuppliersCount,
+        EventsView.bestQuotationTotal,
+        EventsView.rfqTotalPrice
+      ],
+      dimensions: [
+        EventsView.eventType,
+        EventsView.purchaseOrganisation,
+        EventsView.companyCode,
+        EventsView.purchaseGroup,
+        EventsView.createdBy,
+        EventsView.creatorDepartment
+      ],
+      timeDimension: EventsView.createdAt,
+      granularity: `day`,
+      refreshKey: {
+        sql: `SELECT MAX(updated_at) FROM buyer_d_fdw_rfq_service.material_rfq`
+      }
+    }
+  },
+
   joins: {
     StateMaterialRfq: {
       sql: `${CUBE}.current_state_id = ${StateMaterialRfq}.id AND ${CUBE}.event_type = 'RFQ'`,
@@ -32,7 +59,8 @@ cube('EventsView', {
         END
       `,
       type: `sum`,
-      title: `Invited Suppliers`
+      title: `Invited Suppliers`,
+      description: `Number of unique suppliers invited to the event`
     },
 
     viewedSuppliersCount: {
@@ -51,7 +79,8 @@ cube('EventsView', {
         END
       `,
       type: `sum`,
-      title: `Viewed Suppliers`
+      title: `Viewed Suppliers`,
+      description: `Number of unique suppliers who viewed the event`
     },
 
     offeredSuppliersCount: {
@@ -70,7 +99,8 @@ cube('EventsView', {
         END
       `,
       type: `sum`,
-      title: `Offered Suppliers`
+      title: `Offered Suppliers`,
+      description: `Number of unique suppliers who submitted an offer or reply`
     },
 
     rejectedSuppliersCount: {
@@ -89,7 +119,8 @@ cube('EventsView', {
         END
       `,
       type: `sum`,
-      title: `Rejected Suppliers`
+      title: `Rejected Suppliers`,
+      description: `Number of unique suppliers who rejected the invitation`
     },
 
     bestQuotationTotal: {
@@ -114,7 +145,8 @@ cube('EventsView', {
       `,
       type: `min`,
       format: `currency`,
-      title: `Best Quotation (Lowest)`
+      title: `Best Quotation (Lowest)`,
+      description: `Lowest valid quotation price for the current RFQ round`
     },
 
     quotationTotalValid: {
@@ -134,7 +166,8 @@ cube('EventsView', {
       `,
       type: `sum`,
       format: `currency`,
-      title: `Valid Quotation Total`
+      title: `Valid Quotation Total`,
+      description: `Sum of prices for all submitted and valid RFQ quotations`
     },
 
     quotationCountValid: {
@@ -153,7 +186,8 @@ cube('EventsView', {
         END
       `,
       type: `sum`,
-      title: `Valid Quotations Count`
+      title: `Valid Quotations Count`,
+      description: `Number of submitted and valid RFQ quotations`
     },
 
     answerCount: {
@@ -169,7 +203,8 @@ cube('EventsView', {
         END
       `,
       type: `sum`,
-      title: `Answer Count`
+      title: `Answer Count`,
+      description: `Number of submitted questionnaire answers for RFIs`
     },
 
     quotationTotalAvg: {
@@ -182,7 +217,8 @@ cube('EventsView', {
       `,
       type: `number`,
       format: `currency`,
-      title: `Average Quotation Total`
+      title: `Average Quotation Total`,
+      description: `Average price of valid RFQ quotations`
     },
 
     offerPeriodDays: {
@@ -197,13 +233,15 @@ cube('EventsView', {
         )::INTEGER
       `,
       type: `number`,
-      title: `Offer Period (Days)`
+      title: `Offer Period (Days)`,
+      description: `Average duration allowed for suppliers to submit their response`
     },
 
     cycleTimeDays: {
       sql: `AVG(ROUND(EXTRACT(EPOCH FROM (${OrderAward.awardedAtTime} - ${CUBE}.started_date)) / 86400))::INTEGER`,
       type: `number`,
-      title: `Cycle Time (Days)`
+      title: `Cycle Time (Days)`,
+      description: `Average duration from event start to first order award`
     },
 
     quotationRate: {
@@ -216,7 +254,8 @@ cube('EventsView', {
       `,
       type: `number`,
       format: `percent`,
-      title: `Quotation Rate`
+      title: `Quotation Rate`,
+      description: `Percentage of invited suppliers who submitted a valid quotation (RFQs only)`
     },
 
     responseRate: {
@@ -229,7 +268,8 @@ cube('EventsView', {
       `,
       type: `number`,
       format: `percent`,
-      title: `Response Rate`
+      title: `Response Rate`,
+      description: `Percentage of invited suppliers who submitted answers (RFIs only)`
     },
 
     rejectRate: {
@@ -242,7 +282,8 @@ cube('EventsView', {
       `,
       type: `number`,
       format: `percent`,
-      title: `Reject Rate`
+      title: `Reject Rate`,
+      description: `Percentage of invited suppliers who rejected the invitation`
     }
   },
 
@@ -250,13 +291,15 @@ cube('EventsView', {
     stateName: {
       sql: `COALESCE(${StateMaterialRfq.name}, ${StateRequestForInformation.name})`,
       type: `string`,
-      title: `Status Name`
+      title: `Status Name`,
+      description: `Human-readable status name of the event`
     },
 
     awardedAt: {
       sql: `${OrderAward.awardedAtTime}`,
       type: `time`,
-      title: `Award Decision Date`
+      title: `Award Decision Date`,
+      description: `Timestamp of the first order award`
     }
   }
 });

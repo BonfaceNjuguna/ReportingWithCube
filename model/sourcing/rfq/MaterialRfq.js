@@ -17,14 +17,17 @@ cube(`MaterialRfq`, {
       timeDimension: MaterialRfq.createdAt,
       granularity: `day`,
       refreshKey: {
-        every: `1 hour`
+        sql: `SELECT MAX(updated_at) FROM buyer_d_fdw_rfq_service.material_rfq`
       }
     },
     byCreator: {
       measures: [MaterialRfq.count, MaterialRfq.avgCycleTime, MaterialRfq.avgOfferPeriod],
       dimensions: [MaterialRfq.createdBy],
       timeDimension: MaterialRfq.createdAt,
-      granularity: `month`
+      granularity: `month`,
+      refreshKey: {
+        sql: `SELECT MAX(updated_at) FROM buyer_d_fdw_rfq_service.material_rfq`
+      }
     },
     byCreatorMonthlyKpis: {
       measures: [
@@ -39,7 +42,7 @@ cube(`MaterialRfq`, {
       timeDimension: MaterialRfq.createdAt,
       granularity: `month`,
       refreshKey: {
-        every: `1 hour`
+        sql: `SELECT MAX(updated_at) FROM buyer_d_fdw_rfq_service.material_rfq`
       }
     }
   },
@@ -74,19 +77,22 @@ cube(`MaterialRfq`, {
   measures: {
     count: {
       type: `count`,
-      drillMembers: [number, name, createdAt, createdBy]
+      drillMembers: [number, name, createdAt, createdBy],
+      description: `Total number of RFQs`
     },
     
     totalPrice: {
       sql: `total_price`,
       type: `sum`,
-      format: `currency`
+      format: `currency`,
+      description: `Sum of all RFQ total prices`
     },
     
     avgTotalPrice: {
       sql: `total_price`,
       type: `avg`,
-      format: `currency`
+      format: `currency`,
+      description: `Average price of RFQs`
     },
     
     // Offer Period (days between created_at and deadline)
@@ -94,7 +100,8 @@ cube(`MaterialRfq`, {
       sql: `EXTRACT(EPOCH FROM (${CUBE}.deadline - ${CUBE}.created_at))/86400`,
       type: `avg`,
       format: `number`,
-      title: `Average Offer Period (Days)`
+      title: `Average Offer Period (Days)`,
+      description: `Average time given to suppliers to submit offers`
     },
     
     // Cycle Time (days between started_date and first order created)
@@ -103,7 +110,7 @@ cube(`MaterialRfq`, {
       type: `avg`,
       format: `number`,
       title: `Average Cycle Time (Days)`,
-      description: `Time from event start to completion`
+      description: `Average time from event start to completion (first order award)`
     },
 
     // Supplier KPIs
@@ -111,28 +118,32 @@ cube(`MaterialRfq`, {
       sql: `${RequestForToSupplierMaterialRfq.id}`,
       type: `countDistinct`,
       filters: [{ sql: `${RequestForToSupplierMaterialRfq}.is_active = true` }],
-      title: `Invited Suppliers`
+      title: `Invited Suppliers`,
+      description: `Total number of unique suppliers invited to RFQs`
     },
 
     viewedSuppliersCount: {
       sql: `${RequestForToSupplierMaterialRfq.id}`,
       type: `countDistinct`,
       filters: [{ sql: `${StateRequestForToSupplierMaterialRfq}.name = 'Seen'` }],
-      title: `Viewed Suppliers`
+      title: `Viewed Suppliers`,
+      description: `Total number of unique suppliers who viewed the RFQs`
     },
 
     offeredSuppliersCount: {
       sql: `${RequestForToSupplierMaterialRfq.id}`,
       type: `countDistinct`,
       filters: [{ sql: `${StateRequestForToSupplierMaterialRfq}.name = 'SupplierReplySubmitted'` }],
-      title: `Offered Suppliers`
+      title: `Offered Suppliers`,
+      description: `Total number of unique suppliers who submitted offers`
     },
 
     rejectedSuppliersCount: {
       sql: `${RequestForToSupplierMaterialRfq.id}`,
       type: `countDistinct`,
       filters: [{ sql: `${StateRequestForToSupplierMaterialRfq}.name = 'Rejected'` }],
-      title: `Rejected Suppliers`
+      title: `Rejected Suppliers`,
+      description: `Total number of unique suppliers who rejected the RFQ invitation`
     },
 
     // Quotation KPIs
@@ -141,6 +152,7 @@ cube(`MaterialRfq`, {
       type: `min`,
       format: `currency`,
       title: `Best Quotation (Lowest)`,
+      description: `Lowest price among valid and opened quotations in the current round`,
       filters: [
         { sql: `${Quotation}.is_opened = true` },
         { sql: `${Quotation}.round_number = ${CUBE.roundNumber}` },
@@ -168,7 +180,8 @@ cube(`MaterialRfq`, {
       )`,
       type: `number`,
       format: `currency`,
-      title: `Valid Quotation Total`
+      title: `Valid Quotation Total`,
+      description: `Total price of all submitted and valid quotations`
     },
 
     quotationCountValid: {
@@ -183,7 +196,8 @@ cube(`MaterialRfq`, {
           AND sq.name = 'Submitted'
       )`,
       type: `number`,
-      title: `Valid Quotations Count`
+      title: `Valid Quotations Count`,
+      description: `Number of submitted and valid quotations`
     },
 
     quotationTotalAvg: {
@@ -196,7 +210,8 @@ cube(`MaterialRfq`, {
       `,
       type: `number`,
       format: `currency`,
-      title: `Average Quotation Total`
+      title: `Average Quotation Total`,
+      description: `Average price of valid quotations`
     },
 
     // Rate KPIs
@@ -210,7 +225,8 @@ cube(`MaterialRfq`, {
       `,
       type: `number`,
       format: `percent`,
-      title: `Quotation Rate`
+      title: `Quotation Rate`,
+      description: `Percentage of invited suppliers who submitted a valid quotation`
     },
 
     rejectRate: {
@@ -223,7 +239,8 @@ cube(`MaterialRfq`, {
       `,
       type: `number`,
       format: `percent`,
-      title: `Reject Rate`
+      title: `Reject Rate`,
+      description: `Percentage of invited suppliers who rejected the invitation`
     },
 
     // Time-based KPIs
@@ -239,13 +256,15 @@ cube(`MaterialRfq`, {
         )::INTEGER
       `,
       type: `number`,
-      title: `Offer Period (Days)`
+      title: `Offer Period (Days)`,
+      description: `Average number of days suppliers have to submit their offers`
     },
 
     cycleTimeDays: {
       sql: `AVG(ROUND(EXTRACT(EPOCH FROM (${OrderAward.awardedAtTime} - ${CUBE}.started_date)) / 86400))::INTEGER`,
       type: `number`,
-      title: `Cycle Time (Days)`
+      title: `Cycle Time (Days)`,
+      description: `Average number of days from start to first order award`
     }
   },
 
@@ -253,234 +272,274 @@ cube(`MaterialRfq`, {
     id: {
       sql: `id`,
       type: `string`,
-      primaryKey: true
+      primaryKey: true,
+      description: `Unique identifier for the RFQ`
     },
     
     eventType: {
       sql: `'RFQ'`,
       type: `string`,
-      title: `Event Type`
+      title: `Event Type`,
+      description: `Type of sourcing event (fixed to RFQ)`
     },
     
     number: {
       sql: `"number"`,
       type: `string`,
-      title: `RFQ Number`
+      title: `RFQ Number`,
+      description: `Human-readable RFQ number`
     },
     
     name: {
       sql: `name`,
       type: `string`,
-      title: `RFQ Name`
+      title: `RFQ Name`,
+      description: `Name assigned to the RFQ`
     },
     
     shortDescription: {
       sql: `short_description`,
-      type: `string`
+      type: `string`,
+      description: `Brief description of the RFQ`
     },
     
     currentStateId: {
       sql: `current_state_id`,
       type: `string`,
-      title: `Status`
+      title: `Status`,
+      description: `ID of the current status of the RFQ`
     },
     
     stateName: {
       sql: `${StateMaterialRfq.name}`,
       type: `string`,
-      title: `Status Name`
+      title: `Status Name`,
+      description: `Human-readable status name`
     },
     
     // Organization fields
     purchaseOrganisation: {
       sql: `purchase_organisation::jsonb->>'Code'`,
       type: `string`,
-      title: `Purchase Organisation`
+      title: `Purchase Organisation`,
+      description: `Code of the purchasing organization`
     },
     
     purchaseOrganisationName: {
       sql: `purchase_organisation::jsonb->>'Name'`,
       type: `string`,
-      title: `Purchase Organisation Name`
+      title: `Purchase Organisation Name`,
+      description: `Name of the purchasing organization`
     },
     
     companyCode: {
       sql: `company_code::jsonb->>'Code'`,
       type: `string`,
-      title: `Company Code`
+      title: `Company Code`,
+      description: `Code of the company`
     },
     
     companyCodeName: {
       sql: `company_code::jsonb->>'Name'`,
       type: `string`,
-      title: `Company Name`
+      title: `Company Name`,
+      description: `Name of the company`
     },
     
     purchaseGroup: {
       sql: `purchase_group::jsonb->>'Code'`,
       type: `string`,
-      title: `Purchase Group`
+      title: `Purchase Group`,
+      description: `Code of the purchasing group`
     },
     
     purchaseGroupName: {
       sql: `purchase_group::jsonb->>'Name'`,
       type: `string`,
-      title: `Purchase Group Name`
+      title: `Purchase Group Name`,
+      description: `Name of the purchasing group`
     },
     
     // Contact fields
     commercialContact: {
       sql: `(commercial_contact::jsonb->>'FirstName') || ' ' || (commercial_contact::jsonb->>'LastName')`,
       type: `string`,
-      title: `Commercial Contact`
+      title: `Commercial Contact`,
+      description: `Name of the commercial contact person`
     },
     
     commercialContactEmail: {
       sql: `commercial_contact::jsonb->>'Email'`,
       type: `string`,
-      title: `Commercial Contact Email`
+      title: `Commercial Contact Email`,
+      description: `Email of the commercial contact person`
     },
     
     commercialContactId: {
       sql: `commercial_contact::jsonb->>'Id'`,
       type: `string`,
-      title: `Commercial Contact ID`
+      title: `Commercial Contact ID`,
+      description: `User ID of the commercial contact person`
     },
     
     technicalContact: {
       sql: `technical_contact`,
       type: `string`,
-      title: `Technical Contact`
+      title: `Technical Contact`,
+      description: `Name or ID of the technical contact person`
     },
     
     // Creator fields
     createdBy: {
       sql: `(created_by::jsonb->>'FirstName') || ' ' || (created_by::jsonb->>'LastName')`,
       type: `string`,
-      title: `Created By`
+      title: `Created By`,
+      description: `Name of the user who created the RFQ`
     },
     
     createdByUserId: {
       sql: `created_by::jsonb->>'UserId'`,
       type: `string`,
-      title: `Created By User ID`
+      title: `Created By User ID`,
+      description: `ID of the user who created the RFQ`
     },
     
     creatorDepartment: {
       sql: `created_by::jsonb->>'Department'`,
       type: `string`,
-      title: `Creator Department`
+      title: `Creator Department`,
+      description: `Department of the user who created the RFQ`
     },
     
     updatedBy: {
       sql: `(updated_by::jsonb->>'FirstName') || ' ' || (updated_by::jsonb->>'LastName')`,
-      type: `string`
+      type: `string`,
+      description: `Name of the user who last updated the RFQ`
     },
     
     updatedByUserId: {
       sql: `updated_by::jsonb->>'UserId'`,
       type: `string`,
-      title: `Updated By User ID`
+      title: `Updated By User ID`,
+      description: `ID of the user who last updated the RFQ`
     },
     
     // Other attributes
     domain: {
       sql: `domain`,
-      type: `string`
+      type: `string`,
+      description: `Business domain of the RFQ`
     },
     
     currency: {
       sql: `currency`,
-      type: `string`
+      type: `string`,
+      description: `Currency used in the RFQ`
     },
     
     roundNumber: {
       sql: `round_number`,
       type: `number`,
-      title: `Number of Rounds`
+      title: `Number of Rounds`,
+      description: `Current round number of the RFQ`
     },
     
     documentLanguage: {
       sql: `document_language`,
-      type: `string`
+      type: `string`,
+      description: `Language of the RFQ document`
     },
     
     externalIdentifier: {
       sql: `external_identifier`,
-      type: `string`
+      type: `string`,
+      description: `External ID for the RFQ`
     },
     
     // Dates
     createdAt: {
       sql: `created_at`,
       type: `time`,
-      title: `Created At`
+      title: `Created At`,
+      description: `Timestamp when the RFQ was created`
     },
     
     updatedAt: {
       sql: `updated_at`,
-      type: `time`
+      type: `time`,
+      description: `Timestamp when the RFQ was last updated`
     },
     
     startedDate: {
       sql: `started_date`,
       type: `time`,
-      title: `Started/Published At`
+      title: `Started/Published At`,
+      description: `Timestamp when the RFQ was started or published`
     },
     
     deadline: {
       sql: `deadline`,
       type: `time`,
-      title: `Submission Deadline`
+      title: `Submission Deadline`,
+      description: `Timestamp of the submission deadline`
     },
     
     repliesOpenedAt: {
       sql: `replies_opened_at`,
       type: `time`,
-      title: `Replies Opened At`
+      title: `Replies Opened At`,
+      description: `Timestamp when the replies were opened`
     },
     
     repliesOpenedBy: {
       sql: `(replies_opened_by::jsonb->>'FirstName') || ' ' || (replies_opened_by::jsonb->>'LastName')`,
-      type: `string`
+      type: `string`,
+      description: `Name of the user who opened the replies`
     },
     
     repliesOpenedByUserId: {
       sql: `replies_opened_by::jsonb->>'UserId'`,
       type: `string`,
-      title: `Replies Opened By User ID`
+      title: `Replies Opened By User ID`,
+      description: `ID of the user who opened the replies`
     },
     
     awardedAt: {
       sql: `${OrderAward.awardedAtTime}`,
       type: `time`,
-      title: `Award Decision Date`
+      title: `Award Decision Date`,
+      description: `Date when the first order award was made`
     },
     
     // Boolean flags
     isInEditMode: {
       sql: `is_in_edit_mode`,
-      type: `boolean`
+      type: `boolean`,
+      description: `Flag indicating if the RFQ is in edit mode`
     },
     
     hasDocumentChanged: {
       sql: `has_document_changed`,
-      type: `boolean`
+      type: `boolean`,
+      description: `Flag indicating if the RFQ document has changed`
     },
     
     hasDeadlineChanged: {
       sql: `has_deadline_changed`,
-      type: `boolean`
+      type: `boolean`,
+      description: `Flag indicating if the deadline has changed`
     },
     
     isGaebConform: {
       sql: `is_gaeb_conform`,
-      type: `boolean`
+      type: `boolean`,
+      description: `Flag indicating if the RFQ is GAEB conform`
     },
     
     isTreeViewEnabled: {
       sql: `is_tree_view_enabled`,
-      type: `boolean`
+      type: `boolean`,
+      description: `Flag indicating if tree view is enabled`
     }
   }
 });
