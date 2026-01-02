@@ -44,10 +44,18 @@ export function MultiSelect({ label, options, value, onChange, placeholder = 'Se
       <label className="multi-select__label">{label}</label>
       <div className="multi-select__trigger" onClick={() => setIsOpen(!isOpen)}>
         <span className="multi-select__value">
-          {value.length === 0 && placeholder}
-          {value.length > 0 && `${value.length} selected`}
+          {value.length === 0 && <span className="multi-select__placeholder">{placeholder}</span>}
+          {value.length > 0 && (
+            <span className="multi-select__tags">
+              {value.map((selected) => (
+                <span key={selected} className="multi-select__tag">
+                  {selected}
+                </span>
+              ))}
+            </span>
+          )}
         </span>
-        <span className="multi-select__arrow">{isOpen ? '▲' : '▼'}</span>
+        <span className={`multi-select__arrow ${isOpen ? 'is-open' : ''}`}>▼</span>
       </div>
       
       {isOpen && (

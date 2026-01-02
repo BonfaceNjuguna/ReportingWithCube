@@ -199,7 +199,6 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
         <div className="editor-section__header">
           <div>
             <p className="eyebrow">🔍 Quick Filters</p>
-            <p className="panel__title">Event Type, Status & Dates</p>
           </div>
         </div>
         
@@ -230,12 +229,11 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
               onChange={(e) => setSelectedDateField(e.target.value)}
             >
               <option value="created_at">Created At</option>
-              <option value="deadline">Deadline</option>
             </select>
           </div>
 
           <div className="date-field">
-            <label className="field__label field__label--small">From</label>
+            <label className="field__label field__label--small">Date From:</label>
             <input
               type="date"
               className="field__input"
@@ -245,7 +243,7 @@ export function QueryEditor({ initialQuery, loading, onSubmit, error }: QueryEdi
           </div>
 
           <div className="date-field">
-            <label className="field__label field__label--small">To</label>
+            <label className="field__label field__label--small">Date To:</label>
             <input
               type="date"
               className="field__input"
