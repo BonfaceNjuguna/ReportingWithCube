@@ -188,3 +188,5 @@ example-queries/organization-filters-example.json
 example-queries/or-filter-example.json
 example-queries/complex-filter-combination.json
 example-queries/organization-filters-example.json
+
+.vite/
