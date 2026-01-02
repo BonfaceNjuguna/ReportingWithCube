@@ -263,9 +263,22 @@ function ResultTable({ table, loading, error, currentPage, pageSize, totalRows, 
 
   const hasRows = table.rows.length > 0;
   const hasHeaders = table.headers.length > 0;
-  const totalPages = Math.ceil(totalRows / pageSize);
-  const startRow = currentPage * pageSize + 1;
-  const endRow = Math.min((currentPage + 1) * pageSize, totalRows);
+  const returnedRows = table.rows.length;
+  const startRow = returnedRows > 0 ? currentPage * pageSize + 1 : 0;
+  const endRow = returnedRows > 0 ? currentPage * pageSize + returnedRows : 0;
+  const hasMore = returnedRows === pageSize;
+  const totalIsKnown = returnedRows < pageSize || totalRows > endRow;
+  const totalRowsDisplay = totalIsKnown ? (returnedRows < pageSize ? endRow : totalRows) : endRow;
+  const totalPages = totalIsKnown ? Math.max(1, Math.ceil(totalRowsDisplay / pageSize)) : currentPage + 1;
+  const canGoNext = totalIsKnown ? currentPage < totalPages - 1 : hasMore;
+  const canGoLast = totalIsKnown && currentPage < totalPages - 1;
+  const showPagination = hasRows || currentPage > 0;
+  const rangeLabel = returnedRows > 0
+    ? `Showing ${startRow}-${endRow}${totalIsKnown ? ` of ${totalRowsDisplay}` : ''} rows`
+    : 'No results on this page';
+  const pageLabel = totalIsKnown && returnedRows > 0
+    ? `Page ${currentPage + 1} of ${totalPages}`
+    : `Page ${currentPage + 1}`;
 
   // Show empty state if no headers (no columns selected)
   if (!hasHeaders) {
@@ -318,10 +331,10 @@ function ResultTable({ table, loading, error, currentPage, pageSize, totalRows, 
         </table>
       </div>
 
-      {hasRows && totalRows > 0 && (
+      {showPagination && (
         <div className="pagination">
           <div className="pagination__info">
-            <span>Showing {startRow}-{endRow} of {totalRows} rows</span>
+            <span>{rangeLabel}</span>
             <select 
               className="pagination__size-select"
               value={pageSize} 
@@ -352,12 +365,12 @@ function ResultTable({ table, loading, error, currentPage, pageSize, totalRows, 
               ‹
             </button>
             <span className="pagination__page-info">
-              Page {currentPage + 1} of {totalPages}
+              {pageLabel}
             </span>
             <button 
               className="pagination__button"
               onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage >= totalPages - 1}
+              disabled={!canGoNext}
               title="Next page"
             >
               ›
@@ -365,7 +378,7 @@ function ResultTable({ table, loading, error, currentPage, pageSize, totalRows, 
             <button 
               className="pagination__button"
               onClick={() => onPageChange(totalPages - 1)}
-              disabled={currentPage >= totalPages - 1}
+              disabled={!canGoLast}
               title="Last page"
             >
               »
