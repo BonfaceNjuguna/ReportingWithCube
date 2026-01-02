@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using ReportingWithCube.Analytics.Models;
 using ReportingWithCube.Analytics.Semantic;
 
@@ -208,21 +209,24 @@ public abstract class BaseTranslationStrategy : ITranslationStrategy
                && filterDef.Type == FilterType.Time;
     }
 
-    protected object TranslateDateRange(object value)
+    protected JsonElement TranslateDateRange(JsonElement value)
     {
         // Handle common date range formats
-        if (value is string strValue)
+        if (value.ValueKind == JsonValueKind.String)
         {
+            var strValue = value.GetString() ?? string.Empty;
+
             // "last 90 days", "last 6 months", etc.
             if (strValue.StartsWith("last", StringComparison.OrdinalIgnoreCase))
             {
-                return strValue;
+                return value;
             }
             
             // "2024-01-01,2024-12-31" or array
             if (strValue.Contains(','))
             {
-                return strValue.Split(',');
+                var parts = strValue.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                return JsonSerializer.SerializeToElement(parts);
             }
         }
 
@@ -249,27 +253,40 @@ public abstract class BaseTranslationStrategy : ITranslationStrategy
         };
     }
 
-    protected string[] NormalizeValues(object value)
+    protected string[] NormalizeValues(JsonElement value)
     {
-        if (value is string[] strArray)
-            return strArray;
-        
-        if (value is IEnumerable<string> enumerable)
-            return enumerable.ToArray();
-        
-        // Handle JsonElement from deserialization
-        if (value is System.Text.Json.JsonElement jsonElement)
+        if (value.ValueKind == JsonValueKind.Array)
         {
-            if (jsonElement.ValueKind == System.Text.Json.JsonValueKind.Array)
-            {
-                return jsonElement.EnumerateArray()
-                    .Select(e => e.GetString() ?? string.Empty)
-                    .ToArray();
-            }
-            return [jsonElement.GetString() ?? string.Empty];
+            return value.EnumerateArray()
+                .Select(element => element.ValueKind == JsonValueKind.String
+                    ? element.GetString() ?? string.Empty
+                    : element.ToString())
+                .Where(item => !string.IsNullOrWhiteSpace(item))
+                .ToArray();
         }
-        
-        return [value.ToString() ?? string.Empty];
+
+        if (value.ValueKind == JsonValueKind.String)
+        {
+            var text = value.GetString() ?? string.Empty;
+            if (text.Contains(','))
+            {
+                return text.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            }
+
+            return [text];
+        }
+
+        if (value.ValueKind == JsonValueKind.Number)
+        {
+            return [value.ToString()];
+        }
+
+        if (value.ValueKind == JsonValueKind.True || value.ValueKind == JsonValueKind.False)
+        {
+            return [value.GetBoolean().ToString().ToLowerInvariant()];
+        }
+
+        return Array.Empty<string>();
     }
 
     protected string GetTenantId(ClaimsPrincipal user)

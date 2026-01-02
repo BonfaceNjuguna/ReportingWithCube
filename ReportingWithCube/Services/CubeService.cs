@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ReportingWithCube.Analytics.Models;
 
 namespace ReportingWithCube.Services;
 
@@ -7,9 +8,9 @@ namespace ReportingWithCube.Services;
 /// </summary>
 public interface ICubeService
 {
-    Task<T> ExecuteQueryAsync<T>(object query);
-    Task<object> ExecuteQueryAsync(object query);
-    Task<object> GetMetaAsync();
+    Task<T> ExecuteQueryAsync<T>(AnalyticsQueryRequest query);
+    Task<JsonElement> ExecuteQueryAsync(AnalyticsQueryRequest query);
+    Task<JsonElement> GetMetaAsync();
 }
 
 public class CubeService : ICubeService
@@ -37,13 +38,13 @@ public class CubeService : ICubeService
         }
     }
 
-    public async Task<T> ExecuteQueryAsync<T>(object query)
+    public async Task<T> ExecuteQueryAsync<T>(AnalyticsQueryRequest query)
     {
         var result = await ExecuteQueryAsync(query);
         return JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(result))!;
     }
 
-    public async Task<object> ExecuteQueryAsync(object query)
+    public async Task<JsonElement> ExecuteQueryAsync(AnalyticsQueryRequest query)
     {
         try
         {
@@ -81,7 +82,7 @@ public class CubeService : ICubeService
         }
     }
 
-    public async Task<object> GetMetaAsync()
+    public async Task<JsonElement> GetMetaAsync()
     {
         try
         {
@@ -89,9 +90,7 @@ public class CubeService : ICubeService
             response.EnsureSuccessStatusCode();
 
             var responseContent = await response.Content.ReadAsStringAsync();
-            var result = JsonSerializer.Deserialize<JsonElement>(responseContent);
-
-            return result;
+            return JsonSerializer.Deserialize<JsonElement>(responseContent);
         }
         catch (Exception ex)
         {

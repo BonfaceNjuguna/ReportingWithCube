@@ -76,13 +76,11 @@ public class EventDatasetBuilder : IDatasetBuilder
         AddIfApplicable(dimensions, "event_type", EventDimensions.EventType(), eventType);
         AddIfApplicable(dimensions, "state_name", EventDimensions.StateName(), eventType);
 
-        // People - always applicable except technical contact (RFI only)
         AddIfApplicable(dimensions, "created_by", EventDimensions.CreatedBy(), eventType);
         AddIfApplicable(dimensions, "creator_department", EventDimensions.CreatorDepartment(), eventType);
         AddIfApplicable(dimensions, "technical_contact", EventDimensions.TechnicalContact(), eventType);
         AddIfApplicable(dimensions, "commercial_contact", EventDimensions.CommercialContact(), eventType);
 
-        // Organization - RFQ only
         AddIfApplicable(dimensions, "purchase_organisation", EventDimensions.PurchaseOrganisation(), eventType);
         AddIfApplicable(dimensions, "company_code", EventDimensions.CompanyCode(), eventType);
         AddIfApplicable(dimensions, "purchase_group", EventDimensions.PurchaseGroup(), eventType);

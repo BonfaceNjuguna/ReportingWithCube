@@ -1,5 +1,6 @@
 namespace ReportingWithCube.Analytics.Models;
 
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 /// <summary>
@@ -20,7 +21,7 @@ public record UiFilter
 {
     public string Field { get; init; } = string.Empty;
     public string Operator { get; init; } = string.Empty;
-    public object Value { get; init; } = string.Empty;
+    public JsonElement Value { get; init; }
 }
 
 /// <summary>
@@ -63,7 +64,7 @@ public record AnalyticsQueryRequest
 public record TimeDimension
 {
     public string Dimension { get; init; } = string.Empty;
-    public object DateRange { get; init; } = string.Empty;
+    public JsonElement DateRange { get; init; }
     public string? Granularity { get; init; }
 }
 
@@ -81,7 +82,7 @@ public record CubeFilter
 /// </summary>
 public record AnalyticsQueryResponse
 {
-    public object[] Data { get; init; } = Array.Empty<object>();
+    public JsonElement[] Data { get; init; } = Array.Empty<JsonElement>();
     public ColumnMetadata[] Columns { get; init; } = Array.Empty<ColumnMetadata>();
     public QueryMetadata Query { get; init; } = new();
 }

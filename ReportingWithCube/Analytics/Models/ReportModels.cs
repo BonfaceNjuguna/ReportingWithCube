@@ -1,5 +1,7 @@
 namespace ReportingWithCube.Analytics.Models;
 
+using System.Text.Json;
+
 /// <summary>
 /// Saved report definition - stores user's custom report configuration
 /// </summary>
@@ -45,7 +47,7 @@ public class FilterCondition
 {
     public string Field { get; set; } = string.Empty;
     public string Operator { get; set; } = string.Empty;
-    public object Value { get; set; } = null!;
+    public JsonElement Value { get; set; }
 }
 
 /// <summary>
@@ -55,7 +57,7 @@ public class ExecuteReportRequest
 {
     public int? SavedReportId { get; set; }
     public UiQueryRequest? AdHocQuery { get; set; }
-    public Dictionary<string, object>? RuntimeFilters { get; set; } // Override filters at runtime
+    public Dictionary<string, JsonElement>? RuntimeFilters { get; set; } // Override filters at runtime
 }
 
 /// <summary>

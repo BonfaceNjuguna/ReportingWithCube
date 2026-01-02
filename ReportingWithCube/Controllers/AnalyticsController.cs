@@ -164,14 +164,12 @@ public class AnalyticsController : ControllerBase
         }
     }
 
-    private AnalyticsQueryResponse BuildResponse(object cubeResult, DatasetDefinition dataset, long executionMs)
+    private AnalyticsQueryResponse BuildResponse(System.Text.Json.JsonElement cubeResult, DatasetDefinition dataset, long executionMs)
     {
-        var cubeElement = (System.Text.Json.JsonElement)cubeResult;
-        
         // Check if it's an array (the data array)
-        if (cubeElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+        if (cubeResult.ValueKind == System.Text.Json.JsonValueKind.Array)
         {
-            var data = cubeElement.EnumerateArray().Select(e => (object)e).ToArray();
+            var data = cubeResult.EnumerateArray().ToArray();
             var columns = ExtractColumns(data, dataset);
 
             return new AnalyticsQueryResponse
@@ -190,7 +188,7 @@ public class AnalyticsController : ControllerBase
 
         return new AnalyticsQueryResponse
         {
-            Data = Array.Empty<object>(),
+            Data = Array.Empty<System.Text.Json.JsonElement>(),
             Columns = Array.Empty<ColumnMetadata>(),
             Query = new QueryMetadata
             {
@@ -202,16 +200,16 @@ public class AnalyticsController : ControllerBase
         };
     }
 
-    private ColumnMetadata[] ExtractColumns(object[] data, DatasetDefinition dataset)
+    private ColumnMetadata[] ExtractColumns(System.Text.Json.JsonElement[] data, DatasetDefinition dataset)
     {
         if (data.Length == 0) return Array.Empty<ColumnMetadata>();
 
-        var firstRow = data[0] as System.Text.Json.JsonElement?;
-        if (firstRow == null) return Array.Empty<ColumnMetadata>();
+        var firstRow = data[0];
+        if (firstRow.ValueKind != System.Text.Json.JsonValueKind.Object) return Array.Empty<ColumnMetadata>();
 
         var columns = new List<ColumnMetadata>();
 
-        foreach (var prop in firstRow.Value.EnumerateObject())
+        foreach (var prop in firstRow.EnumerateObject())
         {
             var cubeMember = prop.Name;
             var (label, type) = GetFriendlyMetadata(cubeMember, dataset);
@@ -250,6 +248,6 @@ public class AnalyticsController : ControllerBase
 
     private class CubeLoadResult
     {
-        public object[]? Data { get; set; }
+        public System.Text.Json.JsonElement[]? Data { get; set; }
     }
 }

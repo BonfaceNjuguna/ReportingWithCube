@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using ReportingWithCube.Analytics.Models;
 using ReportingWithCube.Analytics.Semantic;
 
@@ -95,19 +96,58 @@ public class AnalyticsQueryValidator : IAnalyticsQueryValidator
 
     private void ValidateDateRange(UiFilter filter, int maxDateRangeDays)
     {
-        if (filter.Value is string[] dateRange && dateRange.Length == 2)
+        if (!TryParseDateRange(filter.Value, out var start, out var end))
         {
-            if (DateTime.TryParse(dateRange[0], out var start) && 
-                DateTime.TryParse(dateRange[1], out var end))
+            return;
+        }
+
+        var days = (end - start).Days;
+        if (days > maxDateRangeDays)
+        {
+            throw new ValidationException(
+                $"Date range exceeds maximum allowed ({maxDateRangeDays} days). Requested: {days} days");
+        }
+    }
+
+    private static bool TryParseDateRange(JsonElement value, out DateTime start, out DateTime end)
+    {
+        start = default;
+        end = default;
+
+        if (value.ValueKind == JsonValueKind.Array)
+        {
+            var items = value.EnumerateArray().Select(item => item.ValueKind == JsonValueKind.String
+                ? item.GetString()
+                : item.ToString()).ToArray();
+
+            if (items.Length >= 2 &&
+                DateTime.TryParse(items[0], out start) &&
+                DateTime.TryParse(items[1], out end))
             {
-                var days = (end - start).Days;
-                if (days > maxDateRangeDays)
-                {
-                    throw new ValidationException(
-                        $"Date range exceeds maximum allowed ({maxDateRangeDays} days). Requested: {days} days");
-                }
+                return true;
+            }
+
+            return false;
+        }
+
+        if (value.ValueKind == JsonValueKind.String)
+        {
+            var text = value.GetString();
+            if (string.IsNullOrWhiteSpace(text) || !text.Contains(','))
+            {
+                return false;
+            }
+
+            var parts = text.Split(',', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 2 &&
+                DateTime.TryParse(parts[0], out start) &&
+                DateTime.TryParse(parts[1], out end))
+            {
+                return true;
             }
         }
+
+        return false;
     }
 
     private void ValidateFilterGroups(FilterGroup[] filterGroups, DatasetDefinition dataset)
