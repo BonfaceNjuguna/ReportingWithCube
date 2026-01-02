@@ -71,7 +71,8 @@ cube(`EventBase`, {
   measures: {
     count: {
       type: `count`,
-      drillMembers: [eventNumber, name, createdAt, createdBy]
+      drillMembers: [eventNumber, name, createdAt, createdBy],
+      description: `Total number of events (RFQ + RFI)`
     },
 
     rfqTotalPrice: {
@@ -79,7 +80,8 @@ cube(`EventBase`, {
       type: `sum`,
       format: `currency`,
       filters: [{ sql: `${CUBE}.event_type = 'RFQ'` }],
-      title: `RFQ Total Price`
+      title: `RFQ Total Price`,
+      description: `Total price sum for RFQ events only`
     }
   },
 
@@ -87,159 +89,187 @@ cube(`EventBase`, {
     id: {
       sql: `id`,
       type: `string`,
-      primaryKey: true
+      primaryKey: true,
+      description: `Unique identifier for the event`
     },
 
     eventType: {
       sql: `event_type`,
       type: `string`,
-      title: `Event Type`
+      title: `Event Type`,
+      description: `Type of the event (RFQ or RFI)`
     },
 
     eventNumber: {
       sql: `event_number`,
       type: `string`,
-      title: `Event Number`
+      title: `Event Number`,
+      description: `Human-readable number of the event`
     },
 
     name: {
       sql: `name`,
       type: `string`,
-      title: `Event Name`
+      title: `Event Name`,
+      description: `Name assigned to the event`
     },
 
     shortDescription: {
       sql: `short_description`,
-      type: `string`
+      type: `string`,
+      description: `Brief description of the event`
     },
 
     currentStateId: {
       sql: `current_state_id`,
       type: `string`,
-      title: `Status ID`
+      title: `Status ID`,
+      description: `ID of the current status of the event`
     },
 
     purchaseOrganisation: {
       sql: `purchase_organisation`,
       type: `string`,
-      title: `Purchase Organisation`
+      title: `Purchase Organisation`,
+      description: `Code of the purchasing organization`
     },
 
     companyCode: {
       sql: `company_code`,
       type: `string`,
-      title: `Company Code`
+      title: `Company Code`,
+      description: `Code of the company`
     },
 
     purchaseGroup: {
       sql: `purchase_group`,
       type: `string`,
-      title: `Purchase Group`
+      title: `Purchase Group`,
+      description: `Code of the purchasing group`
     },
 
     commercialContact: {
       sql: `commercial_contact`,
       type: `string`,
-      title: `Commercial Contact`
+      title: `Commercial Contact`,
+      description: `Name of the commercial contact person`
     },
 
     technicalContact: {
       sql: `technical_contact`,
       type: `string`,
-      title: `Technical Contact`
+      title: `Technical Contact`,
+      description: `Name of the technical contact person`
     },
 
     createdBy: {
       sql: `created_by`,
       type: `string`,
-      title: `Created By`
+      title: `Created By`,
+      description: `Name of the user who created the event`
     },
 
     createdByUserId: {
       sql: `created_by_user_id`,
       type: `string`,
-      title: `Created By User ID`
+      title: `Created By User ID`,
+      description: `ID of the user who created the event`
     },
 
     creatorDepartment: {
       sql: `creator_department`,
       type: `string`,
-      title: `Creator Department`
+      title: `Creator Department`,
+      description: `Department of the user who created the event`
     },
 
     updatedBy: {
       sql: `updated_by`,
-      type: `string`
+      type: `string`,
+      description: `Name of the user who last updated the event`
     },
 
     createdAt: {
       sql: `created_at`,
       type: `time`,
-      title: `Created At`
+      title: `Created At`,
+      description: `Timestamp when the event was created`
     },
 
     updatedAt: {
       sql: `updated_at`,
-      type: `time`
+      type: `time`,
+      description: `Timestamp when the event was last updated`
     },
 
     startedDate: {
       sql: `started_date`,
       type: `time`,
-      title: `Started/Published At`
+      title: `Started/Published At`,
+      description: `Timestamp when the event was started or published`
     },
 
     deadline: {
       sql: `deadline`,
       type: `time`,
-      title: `Submission Deadline`
+      title: `Submission Deadline`,
+      description: `Timestamp of the submission deadline`
     },
 
     repliesOpenedAt: {
       sql: `replies_opened_at`,
       type: `time`,
-      title: `Replies Opened At`
+      title: `Replies Opened At`,
+      description: `Timestamp when the replies were opened`
     },
 
     repliesOpenedBy: {
       sql: `replies_opened_by`,
-      type: `string`
+      type: `string`,
+      description: `Name of the user who opened the replies`
     },
 
     domain: {
       sql: `domain`,
-      type: `string`
+      type: `string`,
+      description: `Business domain of the event`
     },
 
     currency: {
       sql: `currency`,
-      type: `string`
+      type: `string`,
+      description: `Currency used in the event`
     },
 
     roundNumber: {
       sql: `round_number`,
       type: `number`,
-      title: `Round Number`
+      title: `Round Number`,
+      description: `Current round number of the event`
     },
 
     documentLanguage: {
       sql: `document_language`,
-      type: `string`
+      type: `string`,
+      description: `Language of the event document`
     },
 
     isInEditMode: {
       sql: `is_in_edit_mode`,
-      type: `boolean`
+      type: `boolean`,
+      description: `Flag indicating if the event is currently in edit mode`
     },
 
     hasDocumentChanged: {
       sql: `has_document_changed`,
-      type: `boolean`
+      type: `boolean`,
+      description: `Flag indicating if the event document has changed`
     },
 
     hasDeadlineChanged: {
       sql: `has_deadline_changed`,
-      type: `boolean`
+      type: `boolean`,
+      description: `Flag indicating if the deadline has changed`
     }
   }
 });
