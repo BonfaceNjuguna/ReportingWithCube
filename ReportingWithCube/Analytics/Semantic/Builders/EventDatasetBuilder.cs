@@ -40,6 +40,9 @@ public class EventDatasetBuilder : IDatasetBuilder
     {
         var measures = new Dictionary<string, MeasureDefinition>();
 
+        // Event count measure - always applicable
+        AddIfApplicable(measures, "event_count", EventMeasures.EventCount(), eventType);
+
         // Count measures - supplier counts only
         AddIfApplicable(measures, "invited_suppliers_count", EventMeasures.InvitedSuppliersCount(), eventType);
         AddIfApplicable(measures, "viewed_suppliers_count", EventMeasures.ViewedSuppliersCount(), eventType);

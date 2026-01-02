@@ -20,6 +20,7 @@ public record MeasureDefinition
     public string Type { get; init; } = "number";
     public string Format { get; init; } = "number";
     public string[]? ApplicableEventTypes { get; init; } = null; // null means all types
+    public bool Hidden { get; init; } = false; // If true, measure is hidden from UI selection
 }
 
 public record DimensionDefinition

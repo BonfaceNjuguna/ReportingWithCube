@@ -90,13 +90,15 @@ public class AnalyticsController : ControllerBase
             {
                 dataset.Id,
                 dataset.Label,
-                measures = dataset.Measures.Select(m => new
-                {
-                    id = m.Key,
-                    m.Value.Label,
-                    m.Value.Type,
-                    m.Value.Format
-                }),
+                measures = dataset.Measures
+                    .Where(m => !m.Value.Hidden)
+                    .Select(m => new
+                    {
+                        id = m.Key,
+                        m.Value.Label,
+                        m.Value.Type,
+                        m.Value.Format
+                    }),
                 dimensions = dataset.Dimensions.Select(d => new
                 {
                     id = d.Key,

@@ -4,6 +4,16 @@ namespace ReportingWithCube.Analytics.Semantic.Definitions.Shared;
 
 public static class EventMeasures
 {
+    // Event count measure
+    public static MeasureDefinition EventCount() => new()
+    {
+        CubeMember = "EventsView.count",
+        Label = "Number of Events",
+        Type = MeasureType.Count.GetDefaultType(),
+        Format = MeasureType.Count.GetDefaultFormat(),
+        Hidden = true
+    };
+
     // Count measures - supplier counts only
     public static MeasureDefinition InvitedSuppliersCount() => new()
     {

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import './App.css';
 import { QueryEditor } from './components/QueryEditor';
 import { AnalyticsChart } from './components/AnalyticsChart';
-import { useAnalyticsQuery } from './hooks/useAnalyticsQuery';
+import { useAnalyticsQuery, useSummaryQuery } from './hooks/useAnalyticsQuery';
 import type { AnalyticsQuery, AnalyticsResponse, ColumnMetadata } from './types/analytics';
 
 const defaultQuery: AnalyticsQuery = {
@@ -26,6 +26,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(100);
   const { data, loading, error, runQuery } = useAnalyticsQuery();
+  const { summary, summaryLoading, runSummaryQuery } = useSummaryQuery();
 
   const tableData = useMemo(() => {
     const result = deriveTableData(data);
@@ -42,7 +43,9 @@ function App() {
         offset: 0
       }
     };
+    // Run both queries in parallel - table data with pagination, summary without
     runQuery(queryWithPagination);
+    runSummaryQuery(query);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -168,7 +171,7 @@ function App() {
 
             {activeTab === 'chart' && (
               <>
-                {tableData.rows.length === 0 && (
+                {!summary && !summaryLoading && (
                   <div className="empty-state" style={{ padding: '2rem', margin: '1rem 0' }}>
                     <div className="empty-state__icon">📊</div>
                     <h3 className="empty-state__title">No data to visualize</h3>
@@ -179,9 +182,8 @@ function App() {
                 )}
 
                 <AnalyticsChart
-                  tableData={tableData}
-                  query={currentQuery}
-                  loading={loading}
+                  summary={summary}
+                  loading={summaryLoading}
                 />
               </>
             )}
