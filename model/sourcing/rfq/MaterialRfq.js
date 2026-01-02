@@ -250,10 +250,10 @@ cube(`MaterialRfq`, {
           CASE
             WHEN ${CUBE.startedDate} IS NOT NULL
              AND ${CUBE.deadline} IS NOT NULL
-            THEN ROUND(EXTRACT(EPOCH FROM (${CUBE.deadline} - ${CUBE.startedDate})) / 86400)
+            THEN EXTRACT(EPOCH FROM (${CUBE.deadline} - ${CUBE.startedDate})) / 86400.0
             ELSE NULL
           END
-        )::INTEGER
+        )
       `,
       type: `number`,
       title: `Offer Period (Days)`,
@@ -261,7 +261,7 @@ cube(`MaterialRfq`, {
     },
 
     cycleTimeDays: {
-      sql: `AVG(ROUND(EXTRACT(EPOCH FROM (${OrderAward.awardedAtTime} - ${CUBE}.started_date)) / 86400))::INTEGER`,
+      sql: `AVG(EXTRACT(EPOCH FROM (${OrderAward.awardedAtTime} - ${CUBE}.started_date)) / 86400.0)`,
       type: `number`,
       title: `Cycle Time (Days)`,
       description: `Average number of days from start to first order award`

@@ -379,9 +379,15 @@ function ResultTable({ table, loading, error, currentPage, pageSize, totalRows, 
 
 function renderCell(value: unknown, key?: string) {
   if (value === null || value === undefined) return '—';
+  const normalizedKey = (key || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const isDurationKey =
+    normalizedKey.includes('cycletime') ||
+    normalizedKey.includes('offerperiod') ||
+    normalizedKey.includes('duration') ||
+    normalizedKey.endsWith('days');
   if (typeof value === 'number') {
-    if (key && (key.includes('cycle_time') || key.includes('offer_period') || key.toLowerCase().includes('_days'))) {
-      return Math.round(value).toLocaleString() + ' days';
+    if (isDurationKey) {
+      return formatDurationFromDays(value);
     }
     if (key && (key.includes('rate') || key.includes('percent'))) {
       return value.toFixed(1) + '%';
@@ -395,15 +401,37 @@ function renderCell(value: unknown, key?: string) {
     return value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   }
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
-    try {
-      const date = new Date(value);
-      return date.toLocaleDateString();
-    } catch {
-      return value;
+  if (typeof value === 'string') {
+    if (isDurationKey) {
+      const numeric = Number(value);
+      if (Number.isFinite(numeric)) {
+        return formatDurationFromDays(numeric);
+      }
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
+      try {
+        const date = new Date(value);
+        return date.toLocaleDateString();
+      } catch {
+        return value;
+      }
     }
   }
   return String(value);
+}
+
+function formatDurationFromDays(days: number): string {
+  if (!Number.isFinite(days)) return '-';
+
+  const totalSeconds = Math.max(0, Math.round(days * 24 * 60 * 60));
+  const d = Math.floor(totalSeconds / 86400);
+  const h = Math.floor((totalSeconds % 86400) / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+
+  const pad = (num: number) => num.toString().padStart(2, '0');
+  return `${pad(d)}:${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
 export default App;
